@@ -17,6 +17,10 @@ const TeamSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  isEliminated: {
+    type: Boolean,
+    default: false
+  },
 
   members: [{
     user: {
