@@ -1,29 +1,53 @@
 const mongoose = require("mongoose");
 
-const TransactionSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+const UserSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+
+  username: {
+    type: String,
+    unique: true,
+    required: true,
+    lowercase: true,
+    trim: true,
+  },
+
+  email: {
+    type: String,
+    unique: true,
+    required: true,
+    lowercase: true,
+    trim: true,
+    match: [
+      /^[a-z0-9_]+@cse\.nits\.ac\.in$/,
+      "(Bhai/Behen) only CSE students allowed he ",
+    ],
+  },
+
+  googleId: {
+    type: String,
+    unique: true,
     required: true,
   },
 
-  type: {
+  profilePicture: {
     type: String,
-    enum: ["INVEST", "WIN", "ADMIN_ADJUST"],
-    required: true,
+    default: "",
   },
 
   points: {
     type: Number,
-    required: true,
+    default: 1000,
   },
 
-  match: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Match",
+  role: {
+    type: String,
+    enum: ["USER", "ADMIN"],
+    default: "USER",
   },
-
-  note: String,
 
   createdAt: {
     type: Date,
@@ -31,4 +55,4 @@ const TransactionSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("Transaction", TransactionSchema);
+module.exports = mongoose.model("User", UserSchema);
