@@ -20,5 +20,6 @@ router.post("/matches", adminController.createMatch);
 router.patch("/matches/:id/start", adminController.startMatch);
 router.patch("/matches/:id/score", adminController.updateScore);
 router.patch("/matches/:id/end", adminController.endMatch);
+router.get("/teams/eligible/:eventId", adminController.getEligibleTeams);
 
 module.exports = router;
