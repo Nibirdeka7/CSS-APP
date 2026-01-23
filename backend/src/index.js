@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const connectDB = require("./config/db");
+const connectDB = require("../config/db");
 
 const authRoutes = require("./routes/authRoutes");
 
@@ -16,7 +16,7 @@ app.use("/api/auth", authRoutes);
 
 // Health check
 app.get("/", (req, res) => {
-  res.send("Google Auth API Running 🚀");
+  res.send("Google Auth API Running ");
 });
 
 // Start server
