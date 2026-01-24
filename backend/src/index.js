@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const connectDB = require("./config/db");
+const connectDB = require("./config/db.js");
 
 const authRoutes = require("./routes/auth.routes.js");
 const adminRoutes = require("./routes/admin.rotues.js");
@@ -10,14 +10,16 @@ const matchRoutes = require("./routes/match.route.js");
 const teamRoutes = require("./routes/team.route.js");
 const transactionRoutes = require("./routes/transaction.route.js");
 const investmentRoutes = require("./routes/investment.route.js");
-
+const { job } = require("./config/cron.js");
 const app = express();
 
 // Middleware
-
+job.start();
 app.use(cors({
   origin: ["http://localhost:5173"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   credentials: true,
+
 }));
 
 app.use(express.json());
@@ -39,8 +41,8 @@ app.get("/", (req, res) => {
 // Start server
 connectDB();
 const PORT = process.env.PORT || 5000;
-// app.listen(PORT, () =>
-//   console.log(`Server running on http://localhost:${PORT}`),
-// );
+app.listen(PORT, () =>
+  console.log(`Server running on http://localhost:${PORT}`),
+);
 
 module.exports = app;
