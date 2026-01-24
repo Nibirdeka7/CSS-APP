@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const investmentController = require("../controllers/investment.controller.js");
-const { protect } = require("../middleware/AuthMiddleware");
+const { protect } = require("../middleware/authMiddleware");
 
 router.post("/", protect, investmentController.createInvestment);
 router.get("/my", protect, investmentController.getMyInvestments);
