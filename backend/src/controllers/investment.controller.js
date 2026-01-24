@@ -1,7 +1,7 @@
-const Investment = require('../models/Investment.model.js');
-const User = require('../models/User');
-const Match = require('../models/Match.model.js');
-const mongoose = require('mongoose');
+const Investment = require("../models/Investment.model.js");
+const User = require("../models/User");
+const Match = require("../models/Match.model.js");
+const mongoose = require("mongoose");
 /**
  * POST /investments
  * Place a new investment on a team
@@ -16,8 +16,10 @@ exports.createInvestment = async (req, res) => {
     if (!match) {
       return res.status(404).json({ message: "Match not found" });
     }
-    if (match.status === 'COMPLETED') {
-      return res.status(400).json({ message: "Cannot invest in a completed match" });
+    if (match.status === "COMPLETED") {
+      return res
+        .status(400)
+        .json({ message: "Cannot invest in a completed match" });
     }
 
     // 2. Validate User points
@@ -31,7 +33,7 @@ exports.createInvestment = async (req, res) => {
       user: userId,
       match: matchId,
       team: teamId,
-      pointsInvested
+      pointsInvested,
     });
 
     // 4. Deduct points from User and Save Investment
@@ -40,12 +42,11 @@ exports.createInvestment = async (req, res) => {
     await user.save();
     await newInvestment.save();
 
-    res.status(201).json({ 
-      message: "Investment placed successfully", 
+    res.status(201).json({
+      message: "Investment placed successfully",
       remainingPoints: user.points,
-      investment: newInvestment 
+      investment: newInvestment,
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -60,9 +61,9 @@ exports.getInvestmentsByMatch = async (req, res) => {
   try {
     const { matchId } = req.params;
     const investments = await Investment.find({ match: matchId })
-      .populate('user', 'name')
-      .populate('team', 'name');
-    
+      .populate("user", "name")
+      .populate("team", "name");
+
     res.status(200).json(investments);
   } catch (error) {
     res.status(500).json({ message: "Error fetching investments" });
@@ -79,12 +80,26 @@ exports.getMatchInvestmentStats = async (req, res) => {
         $group: {
           _id: "$team", // Grouping by Team ID
           totalPoints: { $sum: "$pointsInvested" }, // Summing the points
-          investorCount: { $sum: 1 } // Counting total investors
-        }
-      }
+          investorCount: { $sum: 1 }, // Counting total investors
+        },
+      },
     ]);
     res.status(200).json(stats);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching stats", error: error.message});
+    res
+      .status(500)
+      .json({ message: "Error fetching stats", error: error.message });
+  }
+};
+exports.getMyInvestments = async (req, res) => {
+  try {
+    const investments = await Investment.find({ user: req.user._id })
+      .populate("team", "name") // Get Team Name
+      .populate("match") // Get Match Details
+      .sort({ createdAt: -1 }); // Newest first
+
+    res.status(200).json(investments);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching investments" });
   }
 };

@@ -26,7 +26,6 @@ app.use("/api/teams", teamRoutes);
 app.use("/api/transaction", transactionRoutes);
 app.use("/api/investment", investmentRoutes);
 
-
 // Health check
 app.get("/", (req, res) => {
   res.send("Google Auth API Running ");
