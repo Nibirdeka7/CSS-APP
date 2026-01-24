@@ -35,7 +35,7 @@ const EventCreateModal = ({ open, onOpenChange, onSuccess }) => {
     sport: 'CRICKET',
     category: 'MALE',
     type: 'TEAM',
-    bannerImageUrl: 'abc.png',
+    bannerImageUrl: '',
     rules: 'Standard rules apply.',
     registrationOpen: true,
     maxTeamSize: '',
@@ -361,6 +361,55 @@ const EventCreateModal = ({ open, onOpenChange, onSuccess }) => {
               </p>
             </div>
           </div> */}
+          {/* Banner Image */}
+<div className="space-y-2">
+  <Label htmlFor="bannerImageUrl">
+    Banner Image URL <span className="text-red-500">*</span>
+  </Label>
+  <div className="space-y-3">
+    <div className="flex gap-4">
+      <Input
+        id="bannerImageUrl"
+        value={formData.bannerImageUrl}
+        onChange={(e) => setFormData({ ...formData, bannerImageUrl: e.target.value })}
+        placeholder="Enter image URL (e.g., https://example.com/image.jpg)"
+        required
+        disabled={isSubmitting || isLoading}
+        className="flex-1"
+      />
+    </div>
+    
+    {/* Image Preview */}
+    {formData.bannerImageUrl && (
+      <div className="mt-2">
+        <div className="text-sm text-gray-500 mb-2">Preview:</div>
+        <div className="w-full h-32 bg-gray-100 rounded-lg overflow-hidden border">
+          <img 
+            src={formData.bannerImageUrl} 
+            alt="Banner preview" 
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.style.display = 'none';
+              const parent = e.target.parentElement;
+              parent.innerHTML = '<div class="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-2"><div class="text-sm">Invalid image URL or failed to load</div><div class="text-xs">Please check the URL and try again</div></div>';
+            }}
+          />
+        </div>
+      </div>
+    )}
+    
+    <p className="text-sm text-gray-500">
+      Enter a valid image URL. Recommended size: 1200×400 pixels. Common formats: .jpg, .png, .webp
+    </p>
+    
+    {/* URL Validation Message */}
+    {formData.bannerImageUrl && !formData.bannerImageUrl.startsWith('http') && (
+      <p className="text-sm text-amber-600">
+        Note: URL should start with http:// or https://
+      </p>
+    )}
+  </div>
+</div>
 
           {/* Rules */}
           <div className="space-y-2">
