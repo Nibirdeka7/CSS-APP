@@ -14,7 +14,30 @@ const investmentRoutes = require("./routes/investment.route.js");
 const app = express();
 
 // Middleware
-app.use(cors());
+const allowedOrigins = [
+  "http://localhost:3000",         
+  "http://localhost:5173",         
+  "https://css-frontend.vercel.app" 
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // allow requests with no origin (like mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true, // ✅ important if using cookies / auth headers
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  })
+);
+
 app.use(express.json());
 
 // Routes
@@ -32,8 +55,8 @@ app.get("/", (req, res) => {
 });
 
 // Start server
-// connectDB();
-// const PORT = process.env.PORT || 5000;
+connectDB();
+const PORT = process.env.PORT || 5000;
 // app.listen(PORT, () =>
 //   console.log(`Server running on http://localhost:${PORT}`),
 // );
