@@ -10,7 +10,6 @@ const matchRoutes = require("./routes/match.route.js");
 const teamRoutes = require("./routes/team.route.js");
 const transactionRoutes = require("./routes/transaction.route.js");
 const investmentRoutes = require("./routes/investment.route.js");
-const { job } = require("./config/cron.js");
 const app = express();
 
 app.use(cors());
@@ -31,8 +30,15 @@ app.get("/", (req, res) => {
   res.send("Google Auth API Running ");
 });
 
-// Start server
-connectDB();
+(async () => {
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error("🔥 DB connection failed on startup:", err);
+    throw err;
+  }
+})();
+
 // const PORT = process.env.PORT || 5000;
 // app.listen(PORT, () =>
 //   console.log(`Server running on http://localhost:${PORT}`),
