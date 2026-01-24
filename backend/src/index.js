@@ -14,29 +14,32 @@ const investmentRoutes = require("./routes/investment.route.js");
 const app = express();
 
 // Middleware
+
 const allowedOrigins = [
-  "http://localhost:3000",         
   "http://localhost:5173",         
-  "https://css-frontend.vercel.app" 
+  "http://localhost:3000",          
+  "https://css-app-iota.vercel.app"
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (like mobile apps, curl, Postman)
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
-        callback(null, true);
+        return callback(null, true);
       } else {
-        callback(new Error("Not allowed by CORS"));
+        console.log("❌ Blocked by CORS:", origin);
+        return callback(new Error("Not allowed by CORS"));
       }
     },
-    credentials: true, // ✅ important if using cookies / auth headers
+    credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"]
   })
 );
+
+app.options("*", cors());
 
 app.use(express.json());
 
