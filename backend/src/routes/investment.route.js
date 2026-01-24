@@ -1,12 +1,20 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const investmentController = require('../controllers/investment.controller.js');
-const { protect } = require('../middleware/authMiddleware');
+const investmentController = require("../controllers/investment.controller.js");
+const { protect } = require("../middleware/AuthMiddleware");
 
+router.post("/", protect, investmentController.createInvestment);
+router.get("/my", protect, investmentController.getMyInvestments);
 
-router.post('/', protect, investmentController.createInvestment);
+router.get(
+  "/match/:matchId",
+  protect,
+  investmentController.getInvestmentsByMatch,
+);
 
-router.get('/match/:matchId', protect, investmentController.getInvestmentsByMatch);
-
-router.get('/matches/:matchId/stats', protect, investmentController.getMatchInvestmentStats);
+router.get(
+  "/matches/:matchId/stats",
+  protect,
+  investmentController.getMatchInvestmentStats,
+);
 module.exports = router;
