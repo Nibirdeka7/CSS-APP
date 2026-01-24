@@ -16,11 +16,15 @@ exports.createInvestment = async (req, res) => {
     if (!match) {
       return res.status(404).json({ message: "Match not found" });
     }
-    if (match.status === "COMPLETED") {
-      return res
-        .status(400)
-        .json({ message: "Cannot invest in a completed match" });
+    if (!match) return res.status(404).json({ message: "Match not found" });
+
+    // Checking for the upcoming status
+    if (match.status !== "UPCOMING") {
+      return res.status(400).json({
+        message: `Investment closed. Match is ${match.status.toLowerCase()}.`,
+      });
     }
+
 
     // 2. Validate User points
     const user = await User.findById(userId);
@@ -49,6 +53,7 @@ exports.createInvestment = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+    console.log("Investment Creation Error:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };

@@ -101,7 +101,7 @@ export const matchAPI = {
 export const investmentAPI = {
   createInvestment: (data) => api.post('/investment', data),
   getInvestmentsByMatch: (matchId) => api.get(`/investment/match/${matchId}`),
-  getMatchStats: (matchId) => api.get(`/investment/matches/${matchId}/stats`),
+  getMatchStats: (matchId) => api.get(`/investment/match/${matchId}/stats`),
 };
 
 // Transactions API

@@ -13,7 +13,7 @@ router.get(
 );
 
 router.get(
-  "/matches/:matchId/stats",
+  "/match/:matchId/stats",
   protect,
   investmentController.getMatchInvestmentStats,
 );
