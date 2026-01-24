@@ -1,5 +1,5 @@
-const Match = require('../models/Match');
-const Investment = require('../models/Investment');
+const Match = require('../models/Match.model.js');
+const Investment = require('../models/Investment.model.js');
 const mongoose = require('mongoose');
 
 /**

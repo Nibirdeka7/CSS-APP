@@ -1,4 +1,7 @@
-const Transaction = require('../models/Transaction');
+const Transaction = require('../models/Transaction.model.js');
+const User = require('../models/User.js');
+const mongoose = require('mongoose');
+
 
 /**
  * GET /transactions/my

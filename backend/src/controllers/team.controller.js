@@ -1,5 +1,5 @@
-const Team = require('../models/Team'); // Path to your Team model
-const Event = require('../models/Event');
+const Team = require('../models/Team.model.js'); // Path to your Team model
+const Event = require('../models/Events.model.js');
 const User = require('../models/User');
 
 /**
@@ -86,8 +86,6 @@ exports.createTeam = async (req, res) => {
       name: finalTeamName,
       event: eventId,
       captainPhone: req.body.captainPhone,
-      jerseyColor,
-      teamLogoUrl,
       members: processedMembers,
       createdBy: userId,
       approved: false // Pending admin approval
