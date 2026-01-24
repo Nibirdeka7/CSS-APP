@@ -16,13 +16,9 @@ const app = express();
 // Middleware
 
 app.use(cors({
-  origin: ["http://localhost:5173", "https://css-app-iota.vercel.app"],
+  origin: ["http://localhost:5173"],
   credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 }));
-
-// 2. Add an explicit handler for preflight
-app.options('*', cors());
 
 app.use(express.json());
 
