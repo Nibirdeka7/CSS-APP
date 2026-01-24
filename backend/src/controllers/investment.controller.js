@@ -1,7 +1,7 @@
-const Investment = require('../models/Investment');
+const Investment = require('../models/Investment.model.js');
 const User = require('../models/User');
-const Match = require('../models/Match');
-
+const Match = require('../models/Match.model.js');
+const mongoose = require('mongoose');
 /**
  * POST /investments
  * Place a new investment on a team
@@ -66,5 +66,25 @@ exports.getInvestmentsByMatch = async (req, res) => {
     res.status(200).json(investments);
   } catch (error) {
     res.status(500).json({ message: "Error fetching investments" });
+  }
+};
+
+// Add this to your investment.controller.js
+exports.getMatchInvestmentStats = async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const stats = await Investment.aggregate([
+      { $match: { match: new mongoose.Types.ObjectId(matchId) } },
+      {
+        $group: {
+          _id: "$team", // Grouping by Team ID
+          totalPoints: { $sum: "$pointsInvested" }, // Summing the points
+          investorCount: { $sum: 1 } // Counting total investors
+        }
+      }
+    ]);
+    res.status(200).json(stats);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching stats", error: error.message});
   }
 };

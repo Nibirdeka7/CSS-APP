@@ -20,6 +20,7 @@ router.get("/teams/pending", adminController.getPendingTeams);
 router.patch("/teams/:id/approve", adminController.approveTeam);
 router.get("/teams/eligible/:eventId", adminController.getEligibleTeams);
 
+
 // Match Routes
 router.post("/matches", adminController.createMatch);
 router.patch("/matches/:id/start", adminController.startMatch);

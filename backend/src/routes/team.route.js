@@ -1,13 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const teamController = require('../controllers/team.controller');
-// const { protect } = require('../middleware/authMiddleware'); // Your auth middleware
+const { protect } = require('../middleware/authMiddleware'); // Your auth middleware
 
 
-router.post('/', teamController.createTeam);
+router.post('/', protect, teamController.createTeam);
 
-router.get('/my', teamController.getMyTeams);
+router.get('/my', protect, teamController.getMyTeams);
 
-router.get('/event/:eventId', teamController.getTeamsByEvent);
-
+router.get('/event/:eventId', protect, teamController.getTeamsByEvent);
 module.exports = router;
