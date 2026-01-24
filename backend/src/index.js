@@ -1,9 +1,15 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const connectDB = require("../config/db");
+const connectDB = require("./config/db");
 
-const authRoutes = require("./routes/authRoutes");
+const authRoutes = require("./routes/auth.routes.js");
+const adminRoutes = require("./routes/admin.rotues.js");
+const eventRoutes = require("./routes/event.routes");
+const matchRoutes = require("./routes/match.route.js");
+const teamRoutes = require("./routes/team.route.js");
+const transactionRoutes = require("./routes/transaction.route.js");
+const investmentRoutes = require("./routes/investment.route.js");
 
 const app = express();
 
@@ -13,6 +19,12 @@ app.use(express.json());
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/events", eventRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/match", matchRoutes);
+app.use("/api/teams", teamRoutes);
+app.use("/api/transaction", transactionRoutes);
+app.use("/api/investment", investmentRoutes);
 
 // Health check
 app.get("/", (req, res) => {
