@@ -6,18 +6,21 @@ const mongoose = require('mongoose');
  * GET /matches/event/:eventId
  * Retrieves all matches for a specific event
  */
+// admin.controller.js (or match.controller.js)
 exports.getMatchesByEvent = async (req, res) => {
   try {
     const { eventId } = req.params;
-    const matches = await Match.find({ event: eventId })
-      .populate('teamA', 'name')
-      .populate('teamB', 'name')
-      .populate('winner', 'name')
-      .sort({ startTime: 1 });
+    const query = eventId === 'all' ? {} : { event: eventId };
+
+    const matches = await Match.find(query)
+      .populate('event', 'name sport') // This turns ID into an Object
+      .populate('teamA', 'name logo captain members') // This fills team info
+      .populate('teamB', 'name logo captain members')
+      .sort({ startTime: -1 });
 
     res.status(200).json(matches);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching matches for this event", error });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -42,6 +45,8 @@ exports.getMatchById = async (req, res) => {
     res.status(500).json({ message: "Error fetching match details", error });
   }
 };
+
+
 
 /**
  * GET /matches/:id/stats

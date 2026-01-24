@@ -20,32 +20,125 @@ import {
 } from '../../../components/ui/select';
 import { Calendar } from '../../../components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../../../components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Upload, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '../../../lib/utils';
+import { useAdminStore } from '../../../stores/adminStore';
+import { toast } from 'sonner';
 
-const EventCreateModal = ({ open, onOpenChange }) => {
+const EventCreateModal = ({ open, onOpenChange, onSuccess }) => {
+  const { createEvent, isLoading } = useAdminStore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
+    sport: 'CRICKET',
+    category: 'MALE',
+    type: 'TEAM',
+    bannerImageUrl: 'abc.png',
+    rules: 'Standard rules apply.',
+    registrationOpen: true,
+    maxTeamSize: '',
+    minTeamSize: '',
+    isActive: true,
     startDate: null,
-    endDate: null,
-    status: 'upcoming',
-    maxTeams: '',
-    entryFee: '',
-    prizePool: ''
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission
-    console.log('Form data:', formData);
-    onOpenChange(false);
+    setIsSubmitting(true);
+
+    try {
+      
+      // Validate required fields
+      const requiredFields = ['name', 'sport', 'category', 'type', 'bannerImageUrl', 'maxTeamSize', 'minTeamSize'];
+      const missingFields = requiredFields.filter(field => !formData[field]);
+      
+      if (missingFields.length > 0) {
+        toast.error(`Please fill in all required fields: ${missingFields.join(', ')}`);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validate team sizes
+      if (parseInt(formData.maxTeamSize) < parseInt(formData.minTeamSize)) {
+        toast.error('Maximum team size must be greater than or equal to minimum team size');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Prepare data for backend
+      const eventData = {
+        ...formData,
+        maxTeamSize: parseInt(formData.maxTeamSize),
+        minTeamSize: parseInt(formData.minTeamSize),
+        startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
+      };
+      console.log(eventData);
+      await createEvent(eventData);
+      toast.success('Event created successfully!');
+      
+      // Reset form
+      setFormData({
+        name: '',
+        sport: 'CRICKET',
+        category: 'MALE',
+        type: 'TEAM',
+        bannerImageUrl: '',
+        rules: 'Standard rules apply.',
+        registrationOpen: true,
+        maxTeamSize: '',
+        minTeamSize: '',
+        isActive: true,
+        startDate: null,
+      });
+      
+      onOpenChange(false);
+      if (onSuccess) onSuccess();
+    } catch (error) {
+      console.error('Failed to create event:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Show loading
+    setIsSubmitting(true);
+    
+    try {
+      setFormData({ ...formData, bannerImageUrl: "abc.png" });
+      toast.success('Image uploaded successfully!');
+    } catch (error) {
+      toast.error('Failed to upload image');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const sportOptions = [
+    { value: 'CRICKET', label: 'Cricket' },
+    { value: 'BADMINTON', label: 'Badminton' },
+  ];
+
+  const categoryOptions = [
+    { value: 'MALE', label: 'Male' },
+    { value: 'FEMALE', label: 'Female' },
+    { value: 'OPEN', label: 'Open' },
+  ];
+
+  const typeOptions = [
+    { value: 'SOLO', label: 'Solo' },
+    { value: 'DUO', label: 'Duo' },
+    { value: 'TEAM', label: 'Team' },
+  ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Event</DialogTitle>
           <DialogDescription>
@@ -54,158 +147,309 @@ const EventCreateModal = ({ open, onOpenChange }) => {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Event Name */}
+          {/* Event Name */}
+          <div className="space-y-2">
+            <Label htmlFor="name">
+              Event Name <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="e.g., Summer Cricket Tournament 2024"
+              required
+              disabled={isSubmitting || isLoading}
+            />
+          </div>
+
+          {/* Sport, Category, Type */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Event Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Summer Cup 2024"
+              <Label htmlFor="sport">
+                Sport <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.sport}
+                onValueChange={(value) => setFormData({ ...formData, sport: value })}
                 required
+                disabled={isSubmitting || isLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select sport" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sportOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category">
+                Category <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value) => setFormData({ ...formData, category: value })}
+                required
+                disabled={isSubmitting || isLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categoryOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="type">
+                Type <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.type}
+                onValueChange={(value) => setFormData({ ...formData, type: value })}
+                required
+                disabled={isSubmitting || isLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {typeOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Start Date */}
+          <div className="space-y-2">
+            <Label>Start Date (Optional)</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !formData.startDate && "text-gray-500"
+                  )}
+                  disabled={isSubmitting || isLoading}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formData.startDate ? (
+                    format(new Date(formData.startDate), "PPP")
+                  ) : (
+                    <span>Pick a date (optional)</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={formData.startDate ? new Date(formData.startDate) : null}
+                  onSelect={(date) => setFormData({ ...formData, startDate: date })}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Team Size Constraints */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="minTeamSize">
+                Minimum Team Size <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="minTeamSize"
+                type="number"
+                min="1"
+                value={formData.minTeamSize}
+                onChange={(e) => setFormData({ ...formData, minTeamSize: e.target.value })}
+                placeholder="e.g., 1 for solo, 2 for duo, 5 for team"
+                required
+                disabled={isSubmitting || isLoading}
               />
             </div>
 
-            {/* Status */}
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="maxTeamSize">
+                Maximum Team Size <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="maxTeamSize"
+                type="number"
+                min="1"
+                value={formData.maxTeamSize}
+                onChange={(e) => setFormData({ ...formData, maxTeamSize: e.target.value })}
+                placeholder="e.g., 1 for solo, 2 for duo, 11 for cricket"
+                required
+                disabled={isSubmitting || isLoading}
+              />
+            </div>
+          </div>
+
+          {/* Banner Image */}
+          {/* <div className="space-y-2">
+            <Label htmlFor="bannerImageUrl">
+              Banner Image URL <span className="text-red-500">*</span>
+            </Label>
+            <div className="space-y-3">
+              <div className="flex gap-4">
+                <Input
+                  id="bannerImageUrl"
+                  value={formData.bannerImageUrl}
+                  onChange={(e) => setFormData({ ...formData, bannerImageUrl: e.target.value })}
+                  placeholder="Enter image URL"
+                  required
+                  disabled={isSubmitting || isLoading}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => document.getElementById('fileUpload').click()}
+                  disabled={isSubmitting || isLoading}
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4 mr-2" />
+                  )}
+                  Upload
+                </Button>
+                <input
+                  id="fileUpload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                  disabled={isSubmitting || isLoading}
+                />
+              </div>
+              
+              {formData.bannerImageUrl && (
+                <div className="mt-2">
+                  <div className="text-sm text-gray-500 mb-2">Preview:</div>
+                  <div className="w-full h-32 bg-gray-100 rounded-lg overflow-hidden">
+                    <img 
+                      src={formData.bannerImageUrl} 
+                      alt="Banner preview" 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-400">Invalid image URL</div>';
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              <p className="text-sm text-gray-500">
+                Enter a valid image URL or upload an image. Recommended size: 1200×400 pixels.
+              </p>
+            </div>
+          </div> */}
+
+          {/* Rules */}
+          <div className="space-y-2">
+            <Label htmlFor="rules">Rules</Label>
+            <Textarea
+              id="rules"
+              value={formData.rules}
+              onChange={(e) => setFormData({ ...formData, rules: e.target.value })}
+              placeholder="Enter tournament rules..."
+              rows={3}
+              disabled={isSubmitting || isLoading}
+            />
+          </div>
+
+          {/* Status & Registration */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="isActive">Event Status</Label>
               <Select
-                value={formData.status}
-                onValueChange={(value) => setFormData({ ...formData, status: value })}
+                value={formData.isActive ? 'active' : 'inactive'}
+                onValueChange={(value) => setFormData({ ...formData, isActive: value === 'active' })}
+                disabled={isSubmitting || isLoading}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="upcoming">Upcoming</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Start Date */}
             <div className="space-y-2">
-              <Label>Start Date *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.startDate && "text-gray-500"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.startDate ? (
-                      format(formData.startDate, "PPP")
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.startDate}
-                    onSelect={(date) => setFormData({ ...formData, startDate: date })}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <Label htmlFor="registrationOpen">Registration</Label>
+              <Select
+                value={formData.registrationOpen ? 'open' : 'closed'}
+                onValueChange={(value) => setFormData({ ...formData, registrationOpen: value === 'open' })}
+                disabled={isSubmitting || isLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select registration status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-
-            {/* End Date */}
-            <div className="space-y-2">
-              <Label>End Date *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.endDate && "text-gray-500"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.endDate ? (
-                      format(formData.endDate, "PPP")
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.endDate}
-                    onSelect={(date) => setFormData({ ...formData, endDate: date })}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Max Teams */}
-            <div className="space-y-2">
-              <Label htmlFor="maxTeams">Maximum Teams</Label>
-              <Input
-                id="maxTeams"
-                type="number"
-                min="2"
-                value={formData.maxTeams}
-                onChange={(e) => setFormData({ ...formData, maxTeams: e.target.value })}
-                placeholder="e.g., 16"
-              />
-            </div>
-
-            {/* Entry Fee */}
-            <div className="space-y-2">
-              <Label htmlFor="entryFee">Entry Fee ($)</Label>
-              <Input
-                id="entryFee"
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.entryFee}
-                onChange={(e) => setFormData({ ...formData, entryFee: e.target.value })}
-                placeholder="e.g., 100.00"
-              />
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Describe the event, rules, and other details..."
-              rows={4}
-            />
-          </div>
-
-          {/* Prize Pool */}
-          <div className="space-y-2">
-            <Label htmlFor="prizePool">Prize Pool ($)</Label>
-            <Input
-              id="prizePool"
-              type="number"
-              min="0"
-              step="0.01"
-              value={formData.prizePool}
-              onChange={(e) => setFormData({ ...formData, prizePool: e.target.value })}
-              placeholder="e.g., 5000.00"
-            />
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                onOpenChange(false);
+                // Reset form on cancel
+                setFormData({
+                  name: '',
+                  sport: 'CRICKET',
+                  category: 'MALE',
+                  type: 'TEAM',
+                  bannerImageUrl: '',
+                  rules: 'Standard rules apply.',
+                  registrationOpen: true,
+                  maxTeamSize: '',
+                  minTeamSize: '',
+                  isActive: true,
+                  startDate: null,
+                });
+              }}
+              disabled={isSubmitting || isLoading}
+            >
               Cancel
             </Button>
-            <Button type="submit">Create Event</Button>
+            <Button 
+              type="submit" 
+              disabled={isSubmitting || isLoading}
+            >
+              {(isSubmitting || isLoading) ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Event'
+              )}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

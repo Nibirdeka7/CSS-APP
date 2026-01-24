@@ -1,7 +1,10 @@
 const Event = require("../models/Events.model");
 const Team = require("../models/Team.model");
 const Match = require("../models/Match.model");
-
+const Investment = require("../models/Investment.model");
+const Transaction = require("../models/Transaction.model");
+const User = require("../models/User");
+const mongoose = require("mongoose");
 // --- EVENT MANAGEMENT ---
 exports.createEvent = async (req, res) => {
   const event = await Event.create(req.body);
@@ -147,6 +150,22 @@ exports.endMatch = async (req, res) => {
     res
       .status(500)
       .json({ message: "Settlement failed", error: error.message });
+  }
+};
+
+// backend/controllers/match.controller.js
+exports.deleteMatch = async (req, res) => {
+  try {
+    const matchId = req.params.id;
+    
+    // Optional: Check for investments first
+    // const investments = await Investment.findOne({ match: matchId });
+    // if (investments) return res.status(400).json({ message: "Cannot delete match with active investments" });
+
+    await Match.findByIdAndDelete(matchId);
+    res.status(200).json({ message: "Match deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 

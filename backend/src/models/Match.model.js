@@ -31,6 +31,15 @@ const MatchSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Team'
   },
+  referee: {
+    type: String
+  },
+  venue: {
+    type: String
+  },
+  round:{
+    type: String
+  },
   startTime: Date,
   endTime: Date,
   createdAt: {

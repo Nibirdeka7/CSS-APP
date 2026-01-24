@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const teamController = require('../controllers/team.controller');
-const { protect } = require('../middleware/authMiddleware'); // Your auth middleware
+const { protect } = require('../middleware/authMiddleware.js'); // Your auth middleware
 
 
 router.post('/', protect, teamController.createTeam);
