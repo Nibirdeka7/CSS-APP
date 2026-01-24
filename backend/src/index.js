@@ -13,8 +13,6 @@ const investmentRoutes = require("./routes/investment.route.js");
 const { job } = require("./config/cron.js");
 const app = express();
 
-// Middleware
-job.start();
 app.use(cors());
 
 app.use(express.json());
