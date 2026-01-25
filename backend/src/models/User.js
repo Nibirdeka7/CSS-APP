@@ -38,6 +38,7 @@ const UserSchema = new mongoose.Schema({
     default: "",
   },
 
+
   points: {
     type: Number,
     default: 1000,
@@ -47,6 +48,11 @@ const UserSchema = new mongoose.Schema({
     type: String,
     enum: ["USER", "ADMIN"],
     default: "USER",
+  },
+  scholarId: {
+    type: String,
+    default: "",
+    trim: true,
   },
 
   createdAt: {
