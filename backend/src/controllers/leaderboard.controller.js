@@ -4,12 +4,44 @@ const Investment = require("../models/Investment.model");
 // Get Top 10 Users by Points
 exports.getTopUsers = async (req, res) => {
   try {
-    const users = await User.find({}, "name points") // Select only name and points
-      .sort({ points: -1 }) // Descending order
-      .limit(10);
+    const leaderboard = await Investment.aggregate([
+      // 1. Group by User ID and sum their investments
+      {
+        $group: {
+          _id: "$user",
+          totalInvested: { $sum: "$pointsInvested" },
+        },
+      },
+      // 2. Sort by highest investment first
+      { $sort: { totalInvested: -1 } },
+      // 3. Limit to top 10
+      { $limit: 10 },
+      // 4. Join with Users collection to get Name
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      // 5. Unwind to make userDetails an object instead of array
+      { $unwind: "$userDetails" },
+      // 6. Project final clean structure
+      {
+        $project: {
+          _id: 1,
+          name: "$userDetails.name",
+          // We return 'points' here so your frontend code (item.points) still works
+          // but now it represents "Total Invested"
+          points: "$totalInvested",
+        },
+      },
+    ]);
 
-    res.status(200).json(users);
+    res.status(200).json(leaderboard);
   } catch (error) {
+    console.error("User Leaderboard Error:", error);
     res.status(500).json({ message: "Error fetching user leaderboard" });
   }
 };

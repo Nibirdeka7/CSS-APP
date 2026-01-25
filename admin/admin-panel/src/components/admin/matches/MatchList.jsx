@@ -29,12 +29,15 @@ import { format } from 'date-fns';
 // Sub-component to handle the Live Pot Visualization
 const MatchPotStats = ({ match, stats }) => {
   if (!stats) return <div className="text-[10px] text-gray-400 animate-pulse">Calculating pot...</div>;
-
+  // console.log("match:", match);
+  // console.log("stats:", stats);
   const teamAId = match.teamA?._id || match.teamA;
   const teamBId = match.teamB?._id || match.teamB;
 
   const totalA = stats.find(s => s._id === teamAId)?.totalPoints || 0;
   const totalB = stats.find(s => s._id === teamBId)?.totalPoints || 0;
+  console.log(totalA);
+  console.log(totalB);
   const combined = totalA + totalB;
   const ratioA = combined > 0 ? (totalA / combined) * 100 : 50;
 

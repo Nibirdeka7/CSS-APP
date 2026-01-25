@@ -176,6 +176,7 @@ exports.getTeamsByEvent = async (req, res) => {
   }
 };
 
+
 exports.updateTeam = async (req, res) => {
   try {
     const { name, captainPhone, members } = req.body;

@@ -10,13 +10,16 @@ exports.createInvestment = async (req, res) => {
   try {
     const { matchId, teamId, pointsInvested } = req.body;
     const userId = req.user._id;
+    const match = await Match.findById(matchId);
 
     // 1. Validate Match exists and is not COMPLETED
-    const match = await Match.findById(matchId);
-    if (!match) {
-      return res.status(404).json({ message: "Match not found" });
+     if (!match) return res.status(404).json({ message: "Match not found" });
+
+    if (match.status !== "UPCOMING") {
+      return res.status(400).json({
+        message: `Investment closed. Match is ${match.status.toLowerCase()}.`,
+      });
     }
-    if (!match) return res.status(404).json({ message: "Match not found" });
 
     // Checking for the upcoming status
     if (match.status !== "UPCOMING") {
@@ -45,6 +48,12 @@ exports.createInvestment = async (req, res) => {
     user.points -= pointsInvested;
     await user.save();
     await newInvestment.save();
+      if (match.teamA.toString() === teamId) {
+      match.totalInvestedA = (match.totalInvestedA || 0) + pointsInvested;
+    } else {
+      match.totalInvestedB = (match.totalInvestedB || 0) + pointsInvested;
+    }
+    await match.save();
 
     res.status(201).json({
       message: "Investment placed successfully",
