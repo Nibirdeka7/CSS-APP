@@ -62,6 +62,98 @@ exports.updateScore = async (req, res) => {
   res.status(200).json(match);
 };
 
+// exports.endMatch = async (req, res) => {
+//   const session = await mongoose.startSession();
+//   session.startTransaction();
+
+//   try {
+//     const { id } = req.params;
+//     const { winnerId } = req.body;
+
+//     // 1. Update Match Status & Winner
+//     const match = await Match.findByIdAndUpdate(
+//       id,
+//       {
+//         status: "COMPLETED",
+//         endTime: Date.now(),
+//         winner: winnerId,
+//       },
+//       { new: true, session },
+//     );
+
+//     // 2. Identify and Eliminate the Loser
+//     // Assuming teamA and teamB are the two participants
+//     const loserId =
+//       match.teamA.toString() === winnerId.toString()
+//         ? match.teamB
+//         : match.teamA;
+
+//     await Team.findByIdAndUpdate(loserId, { isEliminated: true }, { session });
+
+//     // 3. Point Distribution Logic
+//     const allInvestments = await Investment.find({ match: id }).session(
+//       session,
+//     );
+
+//     const winPot = allInvestments
+//       .filter((inv) => inv.team.toString() === winnerId.toString())
+//       .reduce((sum, inv) => sum + inv.pointsInvested, 0);
+
+//     const losePot = allInvestments
+//       .filter((inv) => inv.team.toString() !== winnerId.toString())
+//       .reduce((sum, inv) => sum + inv.pointsInvested, 0);
+
+//     for (let inv of allInvestments) {
+//       if (inv.team.toString() === winnerId.toString()) {
+//         const shareOfLosePot =
+//           winPot > 0 ? (inv.pointsInvested / winPot) * losePot : 0;
+//         const totalPayout = Math.floor(inv.pointsInvested + shareOfLosePot);
+
+//         inv.status = "WON";
+//         inv.pointsWon = totalPayout;
+//         await inv.save({ session });
+
+//         await User.findByIdAndUpdate(
+//           inv.user,
+//           { $inc: { points: totalPayout } },
+//           { session },
+//         );
+
+//         await Transaction.create(
+//           [
+//             {
+//               user: inv.user,
+//               type: "WIN",
+//               points: totalPayout,
+//               match: id,
+//               note: `Match winnings distribution`,
+//             },
+//           ],
+//           { session },
+//         );
+//       } else {
+//         inv.status = "LOST";
+//         inv.pointsWon = 0;
+//         await inv.save({ session });
+//       }
+//     }
+
+//     await session.commitTransaction();
+//     session.endSession();
+
+//     res
+//       .status(200)
+//       .json({ message: "Match ended, loser eliminated, points paid.", match });
+//   } catch (error) {
+//     await session.abortTransaction();
+//     session.endSession();
+//     res
+//       .status(500)
+//       .json({ message: "Settlement failed", error: error.message });
+//   }
+// };
+
+// backend/controllers/match.controller.js
 exports.endMatch = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -70,31 +162,43 @@ exports.endMatch = async (req, res) => {
     const { id } = req.params;
     const { winnerId } = req.body;
 
-    // 1. Update Match Status & Winner
-    const match = await Match.findByIdAndUpdate(
-      id,
-      {
-        status: "COMPLETED",
-        endTime: Date.now(),
-        winner: winnerId,
-      },
-      { new: true, session },
-    );
+    // 1. Update Match with Status and Round Info
+    const match = await Match.findById(id).session(session);
+    if (!match) throw new Error("Match not found");
 
-    // 2. Identify and Eliminate the Loser
-    // Assuming teamA and teamB are the two participants
-    const loserId =
-      match.teamA.toString() === winnerId.toString()
-        ? match.teamB
-        : match.teamA;
+    match.status = "COMPLETED";
+    match.endTime = Date.now();
+    match.winner = winnerId;
+    await match.save({ session });
 
-    await Team.findByIdAndUpdate(loserId, { isEliminated: true }, { session });
+    // 2. Tournament Logic: Winner Progression
+    const currentRound = match.round; // e.g., "QUARTER_FINALS"
+    
+    // Update Winner's highest round
+    await Team.findByIdAndUpdate(winnerId, {
+      highestRoundReached: currentRound === "FINALS" ? "CHAMPION" : currentRound,
+      $set: { ranking: currentRound === "FINALS" ? 1 : null }
+    }, { session });
 
-    // 3. Point Distribution Logic
-    const allInvestments = await Investment.find({ match: id }).session(
-      session,
-    );
+    // 3. Tournament Logic: Loser Handling
+    const loserId = match.teamA.toString() === winnerId.toString() ? match.teamB : match.teamA;
+    const loserTeam = await Team.findById(loserId).session(session);
 
+    // Logic: Reduce lives. If lives reach 0, then eliminate.
+    loserTeam.lives -= 1;
+    if (loserTeam.lives <= 0) {
+      loserTeam.isEliminated = true;
+      
+      // Store Final Ranking if lost in Finals
+      if (currentRound === "FINALS") {
+        loserTeam.ranking = 2; // Runner Up
+        loserTeam.highestRoundReached = "FINALS";
+      }
+    }
+    await loserTeam.save({ session });
+
+    // 4. Point Distribution Logic (Your existing parimutuel math)
+    const allInvestments = await Investment.find({ match: id }).session(session);
     const winPot = allInvestments
       .filter((inv) => inv.team.toString() === winnerId.toString())
       .reduce((sum, inv) => sum + inv.pointsInvested, 0);
@@ -105,32 +209,21 @@ exports.endMatch = async (req, res) => {
 
     for (let inv of allInvestments) {
       if (inv.team.toString() === winnerId.toString()) {
-        const shareOfLosePot =
-          winPot > 0 ? (inv.pointsInvested / winPot) * losePot : 0;
+        const shareOfLosePot = winPot > 0 ? (inv.pointsInvested / winPot) * losePot : 0;
         const totalPayout = Math.floor(inv.pointsInvested + shareOfLosePot);
 
         inv.status = "WON";
         inv.pointsWon = totalPayout;
         await inv.save({ session });
 
-        await User.findByIdAndUpdate(
-          inv.user,
-          { $inc: { points: totalPayout } },
-          { session },
-        );
-
-        await Transaction.create(
-          [
-            {
-              user: inv.user,
-              type: "WIN",
-              points: totalPayout,
-              match: id,
-              note: `Match winnings distribution`,
-            },
-          ],
-          { session },
-        );
+        await User.findByIdAndUpdate(inv.user, { $inc: { points: totalPayout } }, { session });
+        await Transaction.create([{
+          user: inv.user,
+          type: "WIN",
+          points: totalPayout,
+          match: id,
+          note: `Winnings for ${currentRound} match`
+        }], { session });
       } else {
         inv.status = "LOST";
         inv.pointsWon = 0;
@@ -139,21 +232,15 @@ exports.endMatch = async (req, res) => {
     }
 
     await session.commitTransaction();
-    session.endSession();
-
-    res
-      .status(200)
-      .json({ message: "Match ended, loser eliminated, points paid.", match });
+    res.status(200).json({ message: "Settled successfully", round: currentRound });
   } catch (error) {
     await session.abortTransaction();
+    res.status(500).json({ message: "Settlement failed", error: error.message });
+  } finally {
     session.endSession();
-    res
-      .status(500)
-      .json({ message: "Settlement failed", error: error.message });
   }
 };
 
-// backend/controllers/match.controller.js
 exports.deleteMatch = async (req, res) => {
   try {
     const matchId = req.params.id;

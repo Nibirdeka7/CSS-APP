@@ -18,9 +18,24 @@ const TeamSchema = new mongoose.Schema({
     required: true,
     maxlength: 10,
   },
+  highestRoundReached: {
+    type: String,
+    enum: ["NONE", "QUALIFIERS", "QUARTER_FINALS", "SEMI_FINALS", "FINALS", "CHAMPION"],
+    default: "NONE"
+  },
+  
+  // To handle your logic where a loser might play again (e.g., Repechage or Double Elimination)
+  lives: {
+    type: Number,
+    default: 1 // Default is single elimination, increase to 2 for double elimination
+  },
   isEliminated: {
     type: Boolean,
     default: false,
+  },
+  ranking: {
+    type: Number, // 1 for Winner, 2 for Runner up, 3 for 3rd place
+    default: null
   },
 
   members: [

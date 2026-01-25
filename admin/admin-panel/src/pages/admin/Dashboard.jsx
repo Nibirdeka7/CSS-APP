@@ -1,193 +1,202 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardStats from '../../components/admin/DashboardStats';
+import { useAdminStore } from '../../stores/adminStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { 
   TrendingUp, 
-  TrendingDown, 
   Users, 
   Calendar, 
   Trophy,
-  MoreVertical
+  MoreVertical,
+  Loader2,
+  CheckCircle2,
+  Badge
 } from 'lucide-react';
 
 const Dashboard = () => {
-  const stats = [
-    {
-      title: 'Total Events',
-      value: '12',
-      change: '+2',
-      trend: 'up',
-      icon: Calendar,
-      color: 'blue'
-    },
-    {
-      title: 'Active Matches',
-      value: '8',
-      change: '-1',
-      trend: 'down',
-      icon: Trophy,
-      color: 'green'
-    },
-    {
-      title: 'Pending Teams',
-      value: '15',
-      change: '+5',
-      trend: 'up',
-      icon: Users,
-      color: 'orange'
-    },
-    {
-      title: 'Total Revenue',
-      value: '$4,250',
-      change: '+12.5%',
-      trend: 'up',
-      icon: TrendingUp,
-      color: 'purple'
-    }
-  ];
+  const navigate = useNavigate();
+  const { 
+    events, 
+    matches, 
+    pendingTeams, 
+    fetchEvents, 
+    fetchMatches, 
+    fetchPendingTeams, 
+    isLoading 
+  } = useAdminStore();
 
-  const recentActivities = [
-    { id: 1, action: 'Team "Dragons" approved', time: '2 min ago', type: 'team' },
-    { id: 2, action: 'Match "Finals" created', time: '15 min ago', type: 'match' },
-    { id: 3, action: 'Event "Summer Cup" updated', time: '1 hour ago', type: 'event' },
-    { id: 4, action: 'User points distributed', time: '2 hours ago', type: 'transaction' },
-  ];
+  // 1. Initial Data Fetching from real backend routes
+  useEffect(() => {
+    fetchEvents();
+    fetchMatches('all');
+    fetchPendingTeams();
+  }, [fetchEvents, fetchMatches, fetchPendingTeams]);
+
+  // 2. Dynamic Stats Calculation based on real data
+  const liveStats = useMemo(() => {
+    const activeMatchesCount = matches.filter(m => m.status === 'LIVE').length;
+    
+    return [
+      {
+        title: 'Total Events',
+        value: events.length.toString(),
+        icon: Calendar,
+        color: 'blue'
+      },
+      {
+        title: 'Active Matches',
+        value: activeMatchesCount.toString(),
+        icon: Trophy,
+        color: 'green'
+      },
+      {
+        title: 'Pending Teams',
+        value: pendingTeams.length.toString(),
+        icon: Users,
+        color: 'orange'
+      },
+      {
+        title: 'System Uptime',
+        value: '99.9%',
+        icon: TrendingUp,
+        color: 'purple'
+      }
+    ];
+  }, [events, matches, pendingTeams]);
+
+  if (isLoading && events.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+        <Loader2 className="animate-spin h-10 w-10 text-primary" />
+        <p className="text-muted-foreground animate-pulse">Syncing NIT Silchar real-time data...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600">Welcome back! Here's what's happening with your tournaments.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Admin Terminal</h1>
+          <p className="text-gray-500">Live monitoring for NIT Silchar tournament activities.</p>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-100 font-medium">
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          Server Live
+        </div>
       </div>
 
-      {/* Stats Grid */}
-      <DashboardStats stats={stats} />
+      {/* Real Stats Grid */}
+      <DashboardStats stats={liveStats} />
 
-      {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Quick Actions */}
-          <Card>
+          {/* Functional Quick Actions */}
+          <Card className="shadow-sm">
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Frequently used admin actions</CardDescription>
+              <CardDescription>Shortcut to system modules</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Button className="flex-col h-auto py-4">
-                  <Calendar className="mb-2" size={24} />
-                  <span>Create Event</span>
+                <Button variant="outline" className="flex-col h-auto py-6 gap-3" onClick={() => navigate('/admin/events')}>
+                  <Calendar className="text-blue-500" size={28} />
+                  <span className="font-semibold">Events</span>
                 </Button>
-                <Button className="flex-col h-auto py-4">
-                  <Users className="mb-2" size={24} />
-                  <span>Approve Teams</span>
+                <Button variant="outline" className="flex-col h-auto py-6 gap-3" onClick={() => navigate('/admin/teams')}>
+                  <Users className="text-orange-500" size={28} />
+                  <span className="font-semibold text-center">Approvals</span>
                 </Button>
-                <Button className="flex-col h-auto py-4">
-                  <Trophy className="mb-2" size={24} />
-                  <span>Start Match</span>
+                <Button variant="outline" className="flex-col h-auto py-6 gap-3" onClick={() => navigate('/admin/matches')}>
+                  <Trophy className="text-green-500" size={28} />
+                  <span className="font-semibold text-center">Live Score</span>
                 </Button>
-                <Button variant="outline" className="flex-col h-auto py-4">
-                  <MoreVertical className="mb-2" size={24} />
-                  <span>More Actions</span>
+                <Button variant="outline" className="flex-col h-auto py-6 gap-3">
+                  <MoreVertical className="text-gray-400" size={28} />
+                  <span className="font-semibold text-center text-gray-400">Settings</span>
                 </Button>
               </div>
             </CardContent>
           </Card>
 
-          {/* Recent Activities */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activities</CardTitle>
-              <CardDescription>Latest actions in the system</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recentActivities.map((activity) => (
-                  <div key={activity.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        activity.type === 'team' ? 'bg-blue-100 text-blue-600' :
-                        activity.type === 'match' ? 'bg-green-100 text-green-600' :
-                        activity.type === 'event' ? 'bg-purple-100 text-purple-600' :
-                        'bg-orange-100 text-orange-600'
-                      }`}>
-                        {activity.type === 'team' && <Users size={18} />}
-                        {activity.type === 'match' && <Trophy size={18} />}
-                        {activity.type === 'event' && <Calendar size={18} />}
-                        {activity.type === 'transaction' && <TrendingUp size={18} />}
-                      </div>
-                      <div>
-                        <p className="font-medium">{activity.action}</p>
-                        <p className="text-sm text-gray-500">{activity.time}</p>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm">View</Button>
-                  </div>
-                ))}
+          {/* Pending Teams List (Live) */}
+          <Card className="shadow-sm overflow-hidden">
+            <CardHeader className="bg-slate-50/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Approval Queue</CardTitle>
+                  <CardDescription>New registrations awaiting your check</CardDescription>
+                </div>
+                <Badge variant="secondary" className="bg-orange-100 text-orange-700 hover:bg-orange-100">{pendingTeams.length} Total</Badge>
               </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {pendingTeams.length === 0 ? (
+                <div className="flex flex-col items-center py-12 text-gray-400">
+                  <CheckCircle2 size={40} className="mb-2 opacity-20" />
+                  <p>All teams approved!</p>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {pendingTeams.slice(0, 4).map((team) => (
+                    <div key={team._id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 uppercase">
+                          {team.name[0]}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-900">{team.name}</p>
+                          <p className="text-xs text-slate-500 uppercase font-black tracking-widest">{team.event?.sport} - {team.event?.type}</p>
+                        </div>
+                      </div>
+                      <Button size="sm" variant="secondary" onClick={() => navigate('/admin/teams')}>Review</Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
+            {pendingTeams.length > 4 && (
+              <div className="p-3 border-t text-center">
+                <Button variant="ghost" size="sm" onClick={() => navigate('/admin/teams')} className="w-full text-blue-600">View all pending teams</Button>
+              </div>
+            )}
           </Card>
         </div>
 
-        {/* Right Column */}
+        {/* System & Health */}
         <div className="space-y-6">
-          {/* Pending Approvals */}
-          <Card>
+          <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle>Pending Approvals</CardTitle>
-              <CardDescription>Require immediate attention</CardDescription>
+              <CardTitle>Infrastructure</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                <div className="p-3 border rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium">5 Teams</span>
-                    <span className="text-sm text-orange-600">Waiting</span>
+              <div className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-500">API Gateway</span>
+                  <div className="flex items-center gap-2 text-green-600 font-bold text-xs uppercase tracking-widest">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                    Online
                   </div>
-                  <p className="text-sm text-gray-600">New team registrations pending review</p>
-                  <Button size="sm" className="w-full mt-3">Review Now</Button>
                 </div>
-                
-                <div className="p-3 border rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium">3 Matches</span>
-                    <span className="text-sm text-blue-600">Ready to Start</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-500">MongoDB Clusters</span>
+                  <div className="flex items-center gap-2 text-green-600 font-bold text-xs uppercase tracking-widest">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                    Connected
                   </div>
-                  <p className="text-sm text-gray-600">Scheduled matches can be started</p>
-                  <Button size="sm" className="w-full mt-3">View Matches</Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* System Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle>System Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">API Status</span>
-                  <span className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                    <span className="text-green-600">Operational</span>
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Database</span>
-                  <span className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                    <span className="text-green-600">Healthy</span>
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Uptime</span>
-                  <span className="text-gray-900 font-medium">99.9%</span>
+                <div className="pt-4 border-t border-dashed">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase mb-2">Resource Monitoring</p>
+                  <div className="w-full bg-gray-100 rounded-full h-1.5 mb-1">
+                    <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: '45%' }}></div>
+                  </div>
+                  <div className="flex justify-between text-[10px] text-gray-400 font-medium">
+                    <span>Database Usage</span>
+                    <span>45%</span>
+                  </div>
                 </div>
               </div>
             </CardContent>

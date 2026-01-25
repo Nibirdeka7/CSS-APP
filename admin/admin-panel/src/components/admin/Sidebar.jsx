@@ -46,7 +46,7 @@ const Sidebar = () => {
         {/* Logo */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
           {!isCollapsed && (
-            <h1 className="text-xl font-bold text-gray-800">TournamentHub</h1>
+            <h1 className="text-xl font-bold text-gray-800">CSS APP ADMIN</h1>
           )}
           <button
             onClick={toggleSidebar}
