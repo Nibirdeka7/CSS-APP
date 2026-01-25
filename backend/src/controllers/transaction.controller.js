@@ -1,7 +1,6 @@
-const Transaction = require('../models/Transaction.model.js');
-const User = require('../models/User.js');
-const mongoose = require('mongoose');
-
+const Transaction = require("../models/Transaction.model.js");
+const User = require("../models/User.js");
+const mongoose = require("mongoose");
 
 /**
  * GET /transactions/my
@@ -10,7 +9,7 @@ const mongoose = require('mongoose');
 exports.getMyTransactions = async (req, res) => {
   try {
     const transactions = await Transaction.find({ user: req.user._id })
-      .populate('match', 'name')
+      .populate("match", "name")
       .sort({ createdAt: -1 });
 
     res.status(200).json(transactions);
@@ -29,26 +28,33 @@ exports.adminAdjustPoints = async (req, res) => {
 
   try {
     const { targetUserId, points, note } = req.body;
-    
-    // 1. Update User Points
+
+    // Update User Points
     const user = await User.findById(targetUserId).session(session);
     if (!user) throw new Error("User not found");
 
     user.points += points;
     await user.save({ session });
 
-    // 2. Create Transaction Audit
-    const transaction = await Transaction.create([{
-      user: targetUserId,
-      type: 'ADMIN_ADJUST',
-      points: points,
-      note: note || "Admin adjustment"
-    }], { session });
+    // Create Transaction Audit
+    const transaction = await Transaction.create(
+      [
+        {
+          user: targetUserId,
+          type: "ADMIN_ADJUST",
+          points: points,
+          note: note || "Admin adjustment",
+        },
+      ],
+      { session },
+    );
 
     await session.commitTransaction();
     session.endSession();
 
-    res.status(200).json({ message: "Points adjusted", newBalance: user.points });
+    res
+      .status(200)
+      .json({ message: "Points adjusted", newBalance: user.points });
   } catch (error) {
     await session.abortTransaction();
     session.endSession();

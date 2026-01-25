@@ -12,6 +12,7 @@ const transactionRoutes = require("./routes/transaction.route.js");
 const investmentRoutes = require("./routes/investment.route.js");
 const leaderboardRoutes = require("./routes/leaderboard.routes.js");
 const userRoutes = require("./routes/user.routes.js");
+const notificationRoutes = require("./routes/notification.routes");
 
 const app = express();
 
@@ -29,6 +30,8 @@ app.use("/api/transaction", transactionRoutes);
 app.use("/api/investment", investmentRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/notifications", notificationRoutes);
+
 // Health check
 app.get("/", (req, res) => {
   res.send("Google Auth API Running ");

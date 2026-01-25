@@ -1,6 +1,7 @@
-const Team = require("../models/Team.model.js"); // Path to your Team model
+const Team = require("../models/Team.model.js");
 const Event = require("../models/Events.model.js");
 const User = require("../models/User");
+const Notification = require("../models/Notification");
 
 /**
  * POST /teams
@@ -11,14 +12,13 @@ exports.createTeam = async (req, res) => {
     const { name, eventId, members, captainPhone } = req.body;
     const userId = req.user._id;
 
-    // 1. Fetch Event Details
+    // Fetch Event Details
     const event = await Event.findById(eventId);
     if (!event) return res.status(404).json({ message: "Event not found" });
     if (!event.registrationOpen)
       return res.status(400).json({ message: "Registrations are closed" });
 
-    // 2. CHECK IF USER IS ALREADY REGISTERED FOR THIS EVENT
-    // We check if the current user exists in the 'members.user' field of ANY team for this event
+    // CHECK IF USER IS ALREADY REGISTERED
     const alreadyRegistered = await Team.findOne({
       event: eventId,
       "members.user": userId,
@@ -32,12 +32,12 @@ exports.createTeam = async (req, res) => {
     if (captainPhone.length > 10) {
       return res.status(400).json({ message: "Invalid Captain Phone Number" });
     }
+
     // 3. Handle Team Name Uniqueness
     let finalTeamName = name;
     if (event.type === "SOLO") {
-      finalTeamName = req.user.name; // Force name for solo
+      finalTeamName = req.user.name;
     } else {
-      // Group event: Check name uniqueness
       if (!name)
         return res.status(400).json({ message: "Team Name is required" });
       const nameExists = await Team.findOne({ name: name, event: eventId });
@@ -45,7 +45,7 @@ exports.createTeam = async (req, res) => {
         return res.status(400).json({ message: "Team name taken" });
     }
 
-    // 4. Member Validation
+    // Member Validation
     const processedMembers = [];
 
     if (event.type === "SOLO") {
@@ -57,22 +57,18 @@ exports.createTeam = async (req, res) => {
         role: "CAPTAIN",
       });
     } else {
-      // TEAM/DUO Logic
       if (!members || members.length === 0) {
         return res.status(400).json({ message: "Members are required" });
       }
 
-      // Size check (members array + captain)
-      const totalSize = members.length + 1; // +1 because req.user is Captain
+      const totalSize = members.length + 1;
       if (totalSize < event.minTeamSize || totalSize > event.maxTeamSize) {
         return res.status(400).json({
           message: `Total team size must be between ${event.minTeamSize} and ${event.maxTeamSize} (including you)`,
         });
       }
 
-      // Validate Emails
       const emails = members.map((m) => m.email);
-      // Check for duplicates in the provided list
       if (new Set(emails).size !== emails.length) {
         return res
           .status(400)
@@ -104,7 +100,6 @@ exports.createTeam = async (req, res) => {
         });
       }
 
-      // Add Members
       members.forEach((member) => {
         const userDoc = foundUsers.find((u) => u.email === member.email);
         processedMembers.push({
@@ -116,7 +111,6 @@ exports.createTeam = async (req, res) => {
         });
       });
 
-      // Add Captain (Current User)
       processedMembers.push({
         user: userId,
         name: req.user.name,
@@ -126,7 +120,7 @@ exports.createTeam = async (req, res) => {
       });
     }
 
-    // 5. Create Team
+    // Create Team
     const newTeam = new Team({
       name: finalTeamName,
       event: eventId,
@@ -137,6 +131,13 @@ exports.createTeam = async (req, res) => {
     });
 
     await newTeam.save();
+    await Notification.create({
+      user: userId,
+      title: "Registration Received 📝",
+      message: `Your registration for "${event.name}" has been received. Please wait for admin approval.`,
+      type: "INFO",
+    });
+
     res.status(201).json({ message: "Registration successful", team: newTeam });
   } catch (error) {
     console.error(error);
@@ -146,7 +147,6 @@ exports.createTeam = async (req, res) => {
 
 /**
  * GET /teams/my
- * Get teams the logged-in user belongs to
  */
 exports.getMyTeams = async (req, res) => {
   try {
@@ -161,7 +161,6 @@ exports.getMyTeams = async (req, res) => {
 
 /**
  * GET /teams/event/:eventId
- * Get all approved teams for a specific event (Public/Admin view)
  */
 exports.getTeamsByEvent = async (req, res) => {
   try {
@@ -176,7 +175,6 @@ exports.getTeamsByEvent = async (req, res) => {
   }
 };
 
-
 exports.updateTeam = async (req, res) => {
   try {
     const { name, captainPhone, members } = req.body;
@@ -187,17 +185,14 @@ exports.updateTeam = async (req, res) => {
 
     if (!team) return res.status(404).json({ message: "Team not found" });
 
-    // Authorization check: Only creator/captain can update
     if (team.createdBy.toString() !== userId.toString()) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    // Check if open
     if (!team.event.registrationOpen) {
       return res.status(400).json({ message: "Registration is closed" });
     }
 
-    // Logic to update fields
     team.name = name || team.name;
     team.captainPhone = captainPhone || team.captainPhone;
     await team.save();
@@ -214,6 +209,63 @@ exports.getTeamById = async (req, res) => {
       .populate("members.user");
     if (!team) return res.status(404).json({ message: "Team not found" });
     res.status(200).json(team);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * PUT /teams/:id/approve
+ * Admin approves a team -> Triggers Notification
+ */
+exports.approveTeam = async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id).populate("event");
+    if (!team) return res.status(404).json({ message: "Team not found" });
+
+    team.approved = true;
+    await team.save();
+    console.log("Attempting to notify user:", team.createdBy);
+    await Notification.create({
+      user: team.createdBy,
+      title: "Team Approved! ✅",
+      message: `Your team "${team.name}" has been approved for "${team.event.name}". You are ready to play!`,
+      type: "SUCCESS",
+    });
+
+    res.json({ message: "Team approved successfully", team });
+  } catch (error) {
+    console.error("Notification Error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * DELETE /teams/:id/reject
+ * Admin rejects a team -> Triggers Notification
+ */
+exports.rejectTeam = async (req, res) => {
+  try {
+    const { reason } = req.body; 
+    const team = await Team.findById(req.params.id).populate("event");
+    if (!team) return res.status(404).json({ message: "Team not found" });
+
+    const captainId = team.createdBy;
+    const teamName = team.name;
+    const eventName = team.event.name;
+
+    await Team.findByIdAndDelete(req.params.id);
+
+    await Notification.create({
+      user: captainId,
+      title: "Registration Rejected ❌",
+      message: `Your registration for "${eventName}" (Team: ${teamName}) was rejected.${
+        reason ? ` Reason: ${reason}` : ""
+      }`,
+      type: "ERROR",
+    });
+
+    res.json({ message: "Team rejected and removed" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
