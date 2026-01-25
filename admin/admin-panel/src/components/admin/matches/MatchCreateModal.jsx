@@ -13,7 +13,7 @@ const MatchCreateModal = ({ open, onOpenChange, onSuccess }) => {
     teamA: '',
     teamB: '',
     venue: '',
-    round: '', // Now mandatory
+    round: '', 
     startTime: ''
   });
   const [eligibleTeams, setEligibleTeams] = useState([]);
