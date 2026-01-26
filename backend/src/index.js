@@ -13,6 +13,8 @@ const investmentRoutes = require("./routes/investment.route.js");
 const leaderboardRoutes = require("./routes/leaderboard.routes.js");
 const userRoutes = require("./routes/user.routes.js");
 const notificationRoutes = require("./routes/notification.routes");
+const postRoutes = require("./routes/post.route.js");
+const commentRoutes = require("./routes/comment.route.js");
 
 const app = express();
 
@@ -31,6 +33,9 @@ app.use("/api/investment", investmentRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/posts", postRoutes);
+app.use("/api/comments", commentRoutes);
+
 
 // Health check
 app.get("/", (req, res) => {
