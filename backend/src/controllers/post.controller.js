@@ -39,25 +39,25 @@ exports.getPost = asyncHandler(async (req, res) => {
   res.status(200).json({ post });
 });
 
-// exports.getUserPosts = asyncHandler(async (req, res) => {
-//   const { username } = req.params;
+exports.getUserPosts = asyncHandler(async (req, res) => {
+  const { username } = req.params;
+  const userId = req.user.id;
+  const user = await User.findOne({ _id: userId });
+  if (!user) return res.status(404).json({ error: "User not found" });
 
-//   const user = await User.findOne({ username });
-//   if (!user) return res.status(404).json({ error: "User not found" });
+  const posts = await Post.find({ user: user._id })
+    .sort({ createdAt: -1 })
+    .populate("user", "username profilePicture")
+    .populate({
+      path: "comments",
+      populate: {
+        path: "user",
+        select: "username profilePicture",
+      },
+    });
 
-//   const posts = await Post.find({ user: user._id })
-//     .sort({ createdAt: -1 })
-//     .populate("user", "username firstName lastName profilePicture")
-//     .populate({
-//       path: "comments",
-//       populate: {
-//         path: "user",
-//         select: "username firstName lastName profilePicture",
-//       },
-//     });
-
-//   res.status(200).json({ posts });
-// });
+  res.status(200).json({ posts });
+});
 
 exports.createPost = asyncHandler(async (req, res) => {
   const userId = req.user.id;

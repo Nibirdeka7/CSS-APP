@@ -8,7 +8,7 @@ const router = express.Router();
 // public routes
 router.get("/", postController.getPosts);
 router.get("/:postId", postController.getPost);
-router.get("/user/:username", postController.getUserPosts);
+router.get("/user/:username", protect, postController.getUserPosts);
 
 // protected routes
 router.post("/", protect, upload.single("image"), postController.createPost);
