@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: 'https://css-app-mfog.vercel.app/api',
+  baseURL: import.meta.env.VITE_API_URL,
   // baseURL: "http://localhost:5000/api",
   headers: {
     "Content-Type": "application/json",
