@@ -2,14 +2,22 @@ const asyncHandler = require("express-async-handler");
 const Comment = require("../models/comment.model.js");
 const Post = require("../models/post.model.js");
 const User = require("../models/User.js");
+const redis = require("../config/redis");
 
 exports.getComments = asyncHandler(async (req, res) => {
   const { postId } = req.params;
+  const cacheKey = `comments:post:${postId}`;
+
+  const cachedComments = await redis.get(cacheKey);
+  if (cachedComments) {
+    return res.status(200).json({ comments: cachedComments });
+  }
 
   const comments = await Comment.find({ post: postId })
     .sort({ createdAt: -1 })
     .populate("user", "username firstName lastName profilePicture");
 
+  await redis.set(cacheKey, comments, { ex: 300 });
   res.status(200).json({ comments });
 });
 
@@ -48,6 +56,11 @@ exports.createComment = asyncHandler(async (req, res) => {
   //     comment: comment._id,
   //   });
   // }
+  await redis.del(`comments:post:${postId}`);
+  await redis.del("posts:all");
+  await redis.del(`post:single:${postId}`);
+  await redis.del(`posts:user:${post.user.toString()}`);
+
 
   res.status(201).json({ comment });
 });

@@ -4,9 +4,14 @@ const Post = require("../models/post.model");
 const Comment = require("../models/comment.model");
 const User = require("../models/User.js");
 const cloudinary = require("../config/cloudinary");
-
+const redis = require("../config/redis");
 
 exports.getPosts = asyncHandler(async (req, res) => {
+  const cacheKey = "posts:all";
+  const cachedPosts = await redis.get(cacheKey);
+  if (cachedPosts) {
+    return res.status(200).json({ posts: cachedPosts});
+  }
   const posts = await Post.find()
     .sort({ createdAt: -1 })
     .populate("user", "username profilePicture scholarId")
@@ -17,6 +22,7 @@ exports.getPosts = asyncHandler(async (req, res) => {
         select: "name username profilePicture",
       },
     });
+  await redis.set(cacheKey, posts, { ex : 600});
 
   res.status(200).json({ posts });
 });
@@ -95,6 +101,9 @@ exports.createPost = asyncHandler(async (req, res) => {
     image: imageUrl,
   });
 
+  await redis.del("posts:all");
+  await redis.del(`posts:user:${userId}`);
+
   res.status(201).json({ post });
 });
 
@@ -130,6 +139,9 @@ exports.likePost = asyncHandler(async (req, res) => {
     //   });
     // }
   }
+  await redis.del("posts:all");
+  await redis.del(`post:single:${postId}`);
+  await redis.del(`posts:user:${post.user.toString()}`);
   await post.save();
 
   res.status(200).json({
@@ -155,6 +167,10 @@ exports.deletePost = asyncHandler(async (req, res) => {
 
   // delete the post
   await Post.findByIdAndDelete(postId);
+
+  await redis.del("posts:all");
+  await redis.del(`post:single:${postId}`);
+  await redis.del(`posts:user:${userId}`);
 
   res.status(200).json({ message: "Post deleted successfully" });
 });

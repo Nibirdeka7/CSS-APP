@@ -5,12 +5,19 @@ const Team = require("../models/Team.model");
 const Notification = require("../models/Notification");
 const Transaction = require("../models/Transaction.model");
 const User = require("../models/User");
+const redis = require("../config/redis");
 
 // --- PUBLIC GETTERS ---
 
 exports.getMatchesByEvent = async (req, res) => {
   try {
     const { eventId } = req.params;
+    const cacheKey = `matches:${eventId}`;
+
+    const cachedMatches = await redis.get(cacheKey);
+    if (cachedMatches) {
+      return res.status(200).json(cachedMatches);
+    }
     const query = eventId === "all" ? {} : { event: eventId };
     const matches = await Match.find(query)
       .populate("event", "name sport")
@@ -25,7 +32,14 @@ exports.getMatchesByEvent = async (req, res) => {
 
 exports.getMatchById = async (req, res) => {
   try {
-    const match = await Match.findById(req.params.id)
+    const { id } = req.params;
+    const cacheKey = `match:details:${id}`;
+
+    const cachedMatch = await redis.get(cacheKey);
+    if (cachedMatch) {
+      return res.status(200).json(cachedMatch);
+    }
+    const match = await Match.findById(id)
       .populate("event", "name sport")
       .populate("teamA")
       .populate("teamB")
