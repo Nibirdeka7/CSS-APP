@@ -1,19 +1,25 @@
 const User = require("../models/User");
 const Investment = require("../models/Investment.model");
-
+const redis = require("../config/redis");
 // Get Top 10 Users by Points
 exports.getTopUsers = async (req, res) => {
   try {
+    const cacheKey = "leaderboard:users:top10";
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return res.status(200).json(JSON.parse(cached));
+    }
     const leaderboard = await Investment.aggregate([
       // 1. Group by User ID and sum their investments
       {
         $group: {
           _id: "$user",
           totalInvested: { $sum: "$pointsInvested" },
+          firestInvestmentDate: { $min: "$createdAt" },
         },
       },
       // 2. Sort by highest investment first
-      { $sort: { totalInvested: -1 } },
+      { $sort: { totalInvested: -1, firestInvestmentDate: 1} },
       // 3. Limit to top 10
       { $limit: 10 },
       // 4. Join with Users collection to get Name
@@ -38,7 +44,7 @@ exports.getTopUsers = async (req, res) => {
         },
       },
     ]);
-
+    await redis.set(cacheKey, JSON.stringify(leaderboard), { ex: 60 });
     res.status(200).json(leaderboard);
   } catch (error) {
     console.error("User Leaderboard Error:", error);
@@ -49,16 +55,22 @@ exports.getTopUsers = async (req, res) => {
 // Get Top 10 Teams by Total Investment
 exports.getTopTeams = async (req, res) => {
   try {
+    const cacheKey = "leaderboard:teams:top10";
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return res.status(200).json(JSON.parse(cached));
+    }
     const leaderboard = await Investment.aggregate([
       // Group by Team ID and sum the pointsInvested
       {
         $group: {
           _id: "$team",
           totalInvestment: { $sum: "$pointsInvested" },
+          firstInvestment: { $min: "$createdAt" },
         },
       },
       // Sort by highest investment first
-      { $sort: { totalInvestment: -1 } },
+      { $sort: { totalInvestment: -1, firstInvestment: 1 } },
       // Limit to top 10
       { $limit: 10 },
       // Join with Teams collection to get Team Name
@@ -82,7 +94,7 @@ exports.getTopTeams = async (req, res) => {
         },
       },
     ]);
-
+    await redis.set(cacheKey, JSON.stringify(leaderboard), { ex: 60 });
     res.status(200).json(leaderboard);
   } catch (error) {
     console.error(error);

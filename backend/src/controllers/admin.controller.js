@@ -2,7 +2,7 @@ const User = require("../models/User");
 const Event = require("../models/Events.model");
 const Match = require("../models/Match.model");
 const Team = require("../models/Team.model");
-
+const Notification = require("../models/Notification");
 exports.getDashboardStats = async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
@@ -26,3 +26,5 @@ exports.getDashboardStats = async (req, res) => {
 exports.getRecentActivities = async (req, res) => {
   res.json([]); // Implement activity log logic here if needed
 };
+
+

@@ -22,7 +22,7 @@ const MatchSchema = new mongoose.Schema({
     default: 'UPCOMING'
   },
   scoreA: {
-    type: String // e.g. "120/5" or "21-18"
+    type: String 
   },
   scoreB: {
     type: String
@@ -49,3 +49,4 @@ const MatchSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('Match', MatchSchema);
+

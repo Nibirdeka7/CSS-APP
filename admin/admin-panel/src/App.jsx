@@ -7,6 +7,7 @@ import Events from './pages/admin/Event';
 import Teams from './pages/admin/Team';
 import Matches from './pages/admin/Matches';
 import Settings from './pages/admin/Settings';
+// import ManualRegister from './pages/admin/ManualRegister';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="events" element={<Events />} />
           <Route path="teams" element={<Teams />} />
           <Route path="matches" element={<Matches />} />
+          {/* <Route path="register" element={<ManualRegister />} /> */}
           <Route path="settings" element={<Settings />} />
         </Route>
 

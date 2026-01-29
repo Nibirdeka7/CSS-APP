@@ -24,6 +24,7 @@ const Sidebar = () => {
     { path: '/admin/teams', label: 'Teams', icon: Users },
     { path: '/admin/matches', label: 'Matches', icon: Trophy },
     { path: '/admin/settings', label: 'Settings', icon: Settings },
+    // { path: '/admin/register', label: 'Manual Register', icon: Users },
   ];
 
   return (
