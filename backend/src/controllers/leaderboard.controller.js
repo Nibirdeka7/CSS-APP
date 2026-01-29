@@ -4,11 +4,7 @@ const redis = require("../config/redis");
 // Get Top 10 Users by Points
 exports.getTopUsers = async (req, res) => {
   try {
-    const cacheKey = "leaderboard:users:top10";
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      return res.status(200).json(JSON.parse(cached));
-    }
+   
     const leaderboard = await Investment.aggregate([
       // 1. Group by User ID and sum their investments
       {
@@ -44,7 +40,6 @@ exports.getTopUsers = async (req, res) => {
         },
       },
     ]);
-    await redis.set(cacheKey, JSON.stringify(leaderboard), { ex: 60 });
     res.status(200).json(leaderboard);
   } catch (error) {
     console.error("User Leaderboard Error:", error);
@@ -55,11 +50,7 @@ exports.getTopUsers = async (req, res) => {
 // Get Top 10 Teams by Total Investment
 exports.getTopTeams = async (req, res) => {
   try {
-    const cacheKey = "leaderboard:teams:top10";
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      return res.status(200).json(JSON.parse(cached));
-    }
+   
     const leaderboard = await Investment.aggregate([
       // Group by Team ID and sum the pointsInvested
       {
@@ -94,7 +85,6 @@ exports.getTopTeams = async (req, res) => {
         },
       },
     ]);
-    await redis.set(cacheKey, JSON.stringify(leaderboard), { ex: 60 });
     res.status(200).json(leaderboard);
   } catch (error) {
     console.error(error);
