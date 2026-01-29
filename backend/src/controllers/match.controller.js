@@ -54,6 +54,12 @@ exports.getMatchById = async (req, res) => {
 exports.getMatchStats = async (req, res) => {
   try {
     const { id } = req.params;
+    const cacheKey = `match:stats:${id}`;
+
+    const cachedStats = await redis.get(cacheKey);
+    if (cachedStats) {
+      return res.status(200).json(cachedStats);
+    }
     const stats = await Investment.aggregate([
       { $match: { match: new mongoose.Types.ObjectId(id) } },
       {
@@ -72,6 +78,7 @@ exports.getMatchStats = async (req, res) => {
         totalInvestors: s.investorCount,
       })),
     };
+    await redis.set(cacheKey, response, "EX", 300); 
     res.status(200).json(response);
   } catch (error) {
     res
@@ -162,6 +169,10 @@ exports.startMatch = async (req, res) => {
     ).populate("teamA teamB");
     if (!match) return res.status(404).json({ message: "Match not found" });
 
+    await redis.del(`match:details:${req.params.id}`);
+    await redis.del(`matches:list:${match.event._id}`);
+    await redis.del(`matches:list:all`);
+
     try {
       const msg = `Match LIVE: ${match.teamA.name} vs ${match.teamB.name}`;
       await Notification.create({
@@ -194,6 +205,7 @@ exports.updateScore = async (req, res) => {
       { scoreA, scoreB },
       { new: true },
     );
+    await redis.del(`match:details:${req.params.id}`);
     res.json(match);
   } catch (error) {
     res.status(500).json({ message: error.message });

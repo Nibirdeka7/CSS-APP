@@ -2,6 +2,7 @@ const Investment = require("../models/Investment.model.js");
 const User = require("../models/User");
 const Match = require("../models/Match.model.js");
 const mongoose = require("mongoose");
+const redis = require("../config/redis");
 /**
  * POST /investments
  * Place a new investment on a team
@@ -55,6 +56,11 @@ exports.createInvestment = async (req, res) => {
     }
     await match.save();
 
+    await redis.del(`match:stats:${matchId}`);
+    await redis.del(`investments:match:${matchId}`);
+    await redis.del(`user:investments:${userId}`);
+    await redis.del(`match:details:${matchId}`);
+
     res.status(201).json({
       message: "Investment placed successfully",
       remainingPoints: user.points,
@@ -74,6 +80,10 @@ exports.createInvestment = async (req, res) => {
 exports.getInvestmentsByMatch = async (req, res) => {
   try {
     const { matchId } = req.params;
+    const cacheKey = `investments:match:${matchId}`;
+    const cached = await redis.get(cacheKey);
+    if (cached) return res.status(200).json(cached);
+
     const investments = await Investment.find({ match: matchId })
       .populate("user", "name")
       .populate("team", "name");
@@ -88,6 +98,12 @@ exports.getInvestmentsByMatch = async (req, res) => {
 exports.getMatchInvestmentStats = async (req, res) => {
   try {
     const { matchId } = req.params;
+    const cacheKey = `match:stats:${matchId}`;
+    const cachedStats = await redis.get(cacheKey);
+    if (cachedStats) {
+      return res.status(200).json(cachedStats);
+    }
+
     const stats = await Investment.aggregate([
       { $match: { match: new mongoose.Types.ObjectId(matchId) } },
       {
@@ -98,6 +114,8 @@ exports.getMatchInvestmentStats = async (req, res) => {
         },
       },
     ]);
+
+    await redis.set(cacheKey, stats, "EX", 300); // Cache for 5 minutes
     res.status(200).json(stats);
   } catch (error) {
     res
@@ -107,11 +125,15 @@ exports.getMatchInvestmentStats = async (req, res) => {
 };
 exports.getMyInvestments = async (req, res) => {
   try {
+    const userId = req.user._id;
+    const cacheKey = `user:investments:${userId}`;
+    const cached = await redis.get(cacheKey);
+    if (cached) return res.status(200).json(cached);
     const investments = await Investment.find({ user: req.user._id })
       .populate("team", "name") // Get Team Name
       .populate("match") // Get Match Details
       .sort({ createdAt: -1 }); // Newest first
-
+    await redis.set(cacheKey, investments, "EX", 600); // Cache for 5 minutes
     res.status(200).json(investments);
   } catch (error) {
     res.status(500).json({ message: "Error fetching investments" });
