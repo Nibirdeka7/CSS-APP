@@ -7,6 +7,7 @@ import Events from './pages/admin/Event';
 import Teams from './pages/admin/Team';
 import Matches from './pages/admin/Matches';
 import Settings from './pages/admin/Settings';
+import ManualLogin from './pages/admin/ManualLogin';
 // import ManualRegister from './pages/admin/ManualRegister';
 
 function App() {
@@ -25,7 +26,7 @@ function App() {
 
         {/* Redirect to admin dashboard */}
         <Route path="/" element={<Navigate to="/admin" replace />} />
-        
+        <Route path="/dev-login" element={<ManualLogin />} />
         {/* 404 Route */}
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
