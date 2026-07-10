@@ -80,11 +80,9 @@ exports.createTeam = async (req, res) => {
       // --- TEAM LOGIC ---
       // Ensure members is an array (handle edge case)
       const membersList = Array.isArray(members) ? members : [];
-
       if (membersList.length === 0) {
         return res.status(400).json({ message: "Team members are required" });
       }
-
       // Size check (members array + captain)
       const totalSize = membersList.length + 1;
       if (totalSize < event.minTeamSize || totalSize > event.maxTeamSize) {
@@ -232,9 +230,6 @@ exports.getEligibleTeams = async (req, res) => {
 
     console.log(`🔍 Fetching eligible teams for Event: ${eventId}`);
 
-    // 1. Fetch ALL approved teams for this event
-    // We remove the complex "isEliminated" check for a moment to ensure data flows.
-    // If you need to filter losers later, we can add that back.
     const teams = await Team.find({ 
       event: eventId, 
       approved: true 

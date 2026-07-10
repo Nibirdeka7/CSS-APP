@@ -2,6 +2,8 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db.js");
+const { ipRateLimit } = require("./middleware/rateLimit.middleware.js");
+const errorHandler = require("./middleware/error.middleware.js");
 
 const authRoutes = require("./routes/auth.routes.js");
 const adminRoutes = require("./routes/admin.rotues.js");
@@ -22,6 +24,9 @@ app.use(cors());
 
 app.use(express.json());
 
+// Apply rate limiting to all requests
+app.use(ipRateLimit());
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
@@ -36,6 +41,8 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/comments", commentRoutes);
 
+// Error Handler Middleware
+app.use(errorHandler);
 
 // Health check
 app.get("/", (req, res) => {

@@ -85,9 +85,7 @@ exports.getMatchStats = async (req, res) => {
 
 exports.createMatch = async (req, res) => {
   try {
-    console.log("📥 Creating Match:", req.body);
-
-    // Extract everything safely
+    console.log("Creating Match:", req.body);
     const {
       event,
       eventId,
@@ -100,7 +98,7 @@ exports.createMatch = async (req, res) => {
       round,
     } = req.body;
 
-    // ✅ FIX: Prioritize the ID fields and ignore empty strings
+    // FIX: Prioritize the ID fields and ignore empty strings
     const finalEventId = eventId && eventId !== "" ? eventId : event;
     const finalTeamA = teamAId && teamAId !== "" ? teamAId : teamA;
     const finalTeamB = teamBId && teamBId !== "" ? teamBId : teamB;
@@ -204,7 +202,7 @@ exports.updateScore = async (req, res) => {
 };
 
 /**
- * End Match (Parimutuel Logic + Notifications)
+ * End Match
  */
 exports.endMatch = async (req, res) => {
   const session = await mongoose.startSession();
@@ -222,7 +220,7 @@ exports.endMatch = async (req, res) => {
     match.winner = winnerId;
     await match.save({ session });
 
-    // Tournament Bracket Logic
+    // Tournament Logic
     const currentRound = match.round;
     await Team.findByIdAndUpdate(
       winnerId,

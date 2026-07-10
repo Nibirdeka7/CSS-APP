@@ -6,9 +6,6 @@ const { protect } = require("../middleware/authMiddleware.js");
 // 1. Create Team
 router.post("/", protect, teamController.createTeam);
 
-// ==========================================
-// ⚠️ THESE SPECIFIC ROUTES MUST BE AT THE TOP
-// ==========================================
 router.get("/my", protect, teamController.getMyTeams);
 router.get("/pending", protect, teamController.getPendingTeams);
 router.get("/eligible/:eventId", protect, teamController.getEligibleTeams); // <--- This feeds the dropdown

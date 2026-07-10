@@ -7,12 +7,10 @@ const redis = require("../config/redis");
 exports.getComments = asyncHandler(async (req, res) => {
   const { postId } = req.params;
   const cacheKey = `comments:post:${postId}`;
-
   const cachedComments = await redis.get(cacheKey);
   if (cachedComments) {
     return res.status(200).json({ comments: cachedComments });
   }
-
   const comments = await Comment.find({ post: postId })
     .sort({ createdAt: -1 })
     .populate("user", "username firstName lastName profilePicture");
