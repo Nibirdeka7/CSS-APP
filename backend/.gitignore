@@ -2,3 +2,6 @@
 .env.local
 node_modules/
 .DS_Store
+study.md
+studying.md
+package-lock.json

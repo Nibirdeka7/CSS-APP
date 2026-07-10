@@ -67,7 +67,7 @@ exports.getTopTeams = async (req, res) => {
       // Join with Teams collection to get Team Name
       {
         $lookup: {
-          from: "teams", // verify this matches your MongoDB collection name (usually lowercase plural)
+          from: "teams", 
           localField: "_id",
           foreignField: "_id",
           as: "teamDetails",
