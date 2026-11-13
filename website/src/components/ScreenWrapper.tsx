@@ -33,7 +33,8 @@ export function ScreenWrapper({
         {/* Top Mobile Status Header Bar */}
         <div className="sticky top-0 z-40 bg-[#020617]/90 backdrop-blur-md px-4 py-2.5 flex items-center justify-between border-b border-[#1e293b]/50 text-xs">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping inline-block" />
+            {/* <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping inline-block" /> */}
+            
             <span className="font-extrabold tracking-wider text-cyan-400 text-[11px] uppercase">
               CSS OLYMPICS
             </span>
