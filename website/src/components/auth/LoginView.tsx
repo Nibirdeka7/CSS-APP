@@ -69,30 +69,13 @@ export function LoginView() {
                 />
               </div>
 
-              <div className="relative w-full text-center my-2">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-[#1e293b]" />
-                </div>
-                <div className="relative flex justify-center text-[10px] uppercase">
-                  <span className="bg-[#0f172a] px-2 text-slate-500 font-bold">
-                    Or Webmail Login
-                  </span>
-                </div>
-              </div>
+              
 
-              <button
-                type="button"
-                onClick={() => setShowWebmailForm(!showWebmailForm)}
-                className="text-xs text-slate-400 hover:text-cyan-400 font-bold transition-colors"
-              >
-                {showWebmailForm ? "Hide Webmail Login" : "Sign In with College Email"}
-              </button>
+             
             </div>
           ) : (
             <div className="p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-center">
-              <p className="text-xs text-cyan-300 font-semibold">
-                Sign in with your campus Google Webmail
-              </p>
+              
             </div>
           )}
 
@@ -146,7 +129,7 @@ export function LoginView() {
 
           <div className="pt-2 text-center">
             <span className="text-[10px] text-slate-500 leading-tight block">
-              Restricted strictly to NIT Silchar CSE department students. User roles are authenticated against the system database.
+              Restricted strictly to NIT Silchar CSE department students.
             </span>
           </div>
         </CardContent>

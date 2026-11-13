@@ -4,10 +4,12 @@ const { OAuth2Client } = require("google-auth-library");
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-const generateToken = (userId) =>
-  jwt.sign({ userId }, process.env.JWT_SECRET, {
+const generateToken = (userId) => {
+  const secret = process.env.JWT_SECRET || "css_app_default_fallback_jwt_secret_token";
+  return jwt.sign({ userId }, secret, {
     expiresIn: process.env.JWT_EXPIRE || "7d",
   });
+};
 
 const isAllowedEmail = (email) => {
   if (!email || typeof email !== "string") return false;
@@ -127,7 +129,10 @@ exports.googleAuth = async (req, res) => {
     if (error.name === "ValidationError") {
       return res.status(400).json({ success: false, message: error.message });
     }
-    res.status(500).json({ success: false, message: "Authentication failed" });
+    res.status(500).json({
+      success: false,
+      message: error.message || "Authentication failed",
+    });
   }
 };
 

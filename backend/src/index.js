@@ -70,10 +70,36 @@ app.use(cors(corsOptions));
 // In Express 5, regex path is used instead of wildcard string for explicit options handler
 app.options(/.*/, cors(corsOptions));
 
+// Set Cross-Origin-Opener-Policy to allow Google OAuth popup postMessage
+app.use((req, res, next) => {
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  next();
+});
+
 app.use(express.json());
 
 // Apply rate limiting to all requests
 app.use(ipRateLimit());
+
+// Ensure database connection is ready for serverless execution (Vercel)
+app.use(async (req, res, next) => {
+  // Allow health check without waiting for DB
+  if (req.path === "/" || req.method === "OPTIONS") {
+    return next();
+  }
+
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error("Database connection middleware error:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Database connection failed. Ensure MONGO_URI is set in Vercel and MongoDB Atlas has Network Access 0.0.0.0/0 enabled.",
+      error: err.message,
+    });
+  }
+});
 
 // Routes
 app.use("/api/auth", authRoutes);
