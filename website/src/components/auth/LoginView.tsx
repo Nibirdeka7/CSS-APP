@@ -37,18 +37,25 @@ export function LoginView() {
       <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[350px] h-[350px] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none" />
 
       <Card className="w-full max-w-sm border-[#1e293b] bg-[#0f172a]/90 backdrop-blur-xl shadow-2xl relative z-10">
-        <CardHeader className="text-center pb-4 pt-8">
-          {/* Logo */}
-          <div className="mx-auto mb-4 w-20 h-20 rounded-2xl bg-gradient-to-br from-[#0f172a] to-[#020617] border-2 border-cyan-500/40 flex items-center justify-center shadow-[0_0_35px_rgba(6,182,212,0.25)]">
-            <span className="text-2xl font-black text-cyan-400 font-mono tracking-tighter">
-              CSS
-            </span>
+        <CardHeader className="text-center pb-3 pt-6">
+          {/* Logo Container */}
+          <div className="mx-auto mb-3 flex items-center justify-center">
+            <div className="relative group">
+              <div className="absolute -inset-2 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-cyan-500/20 rounded-3xl blur-xl opacity-75 pointer-events-none" />
+              <div className="relative px-5 py-2.5 rounded-2xl bg-[#020617]/85 border border-cyan-500/30 backdrop-blur-md flex items-center justify-center shadow-[0_0_25px_rgba(6,182,212,0.2)]">
+                <img
+                  src="/images/CSS.png"
+                  alt="Computer Science Society Logo"
+                  className="h-16 sm:h-20 w-auto object-contain select-none drop-shadow-[0_2px_10px_rgba(6,182,212,0.3)]"
+                />
+              </div>
+            </div>
           </div>
 
           <CardTitle className="text-2xl font-black tracking-tight text-white">
             CSS <span className="text-cyan-400">OLYMPICS</span>
           </CardTitle>
-          <CardDescription className="text-slate-400 text-xs font-semibold tracking-wider uppercase mt-1">
+          <CardDescription className="text-slate-400 text-xs font-semibold tracking-wider uppercase mt-0.5">
             NIT Silchar Sports Portal
           </CardDescription>
         </CardHeader>
@@ -68,14 +75,12 @@ export function LoginView() {
                   width="300"
                 />
               </div>
-
-              
-
-             
             </div>
           ) : (
             <div className="p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-center">
-              
+              <p className="text-xs text-cyan-300 font-semibold">
+                Sign in with your campus Google Webmail
+              </p>
             </div>
           )}
 
