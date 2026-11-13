@@ -9,7 +9,7 @@ import { Badge } from "./ui/badge";
 
 interface ScreenWrapperProps {
   children: ReactNode;
-  activeTab?: "home" | "leaderboard" | "feed" | "profile" | "none";
+  activeTab?: "home" | "matches" | "feed" | "profile" | "leaderboard" | "none";
   hideNav?: boolean;
 }
 

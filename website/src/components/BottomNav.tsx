@@ -2,10 +2,10 @@
 
 import React from "react";
 import Link from "next/link";
-import { Home, Trophy, Globe2, User } from "lucide-react";
+import { Home, Swords, Globe2, User } from "lucide-react";
 
 interface BottomNavProps {
-  activeTab: "home" | "leaderboard" | "feed" | "profile" | "none";
+  activeTab: "home" | "matches" | "feed" | "profile" | "none" | "leaderboard";
 }
 
 export function BottomNav({ activeTab }: BottomNavProps) {
@@ -17,10 +17,10 @@ export function BottomNav({ activeTab }: BottomNavProps) {
       icon: Home,
     },
     {
-      id: "leaderboard",
-      label: "Standings",
-      href: "/?tab=leaderboard",
-      icon: Trophy,
+      id: "matches",
+      label: "Matches",
+      href: "/matches",
+      icon: Swords,
     },
     {
       id: "feed",

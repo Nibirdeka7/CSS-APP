@@ -1,21 +1,27 @@
 "use client";
 
-import React, { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { Suspense, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import LoginView from "@/components/auth/LoginView";
 import OnboardingView from "@/components/auth/OnboardingView";
 import HomeTab from "@/components/tabs/HomeTab";
-import LeaderboardTab from "@/components/tabs/LeaderboardTab";
 import FeedTab from "@/components/tabs/FeedTab";
 import ProfileTab from "@/components/tabs/ProfileTab";
 import { Loader2 } from "lucide-react";
 
 function MainContent() {
   const { user, isLoading } = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab") || "home";
+
+  useEffect(() => {
+    if (tabParam === "leaderboard" || tabParam === "matches") {
+      router.replace("/matches");
+    }
+  }, [tabParam, router]);
 
   if (isLoading) {
     return (
@@ -40,15 +46,14 @@ function MainContent() {
 
   // Authenticated with Scholar ID -> Show Tab View inside ScreenWrapper
   const activeTab = (
-    ["home", "leaderboard", "feed", "profile"].includes(tabParam)
+    ["home", "feed", "profile"].includes(tabParam)
       ? tabParam
       : "home"
-  ) as "home" | "leaderboard" | "feed" | "profile";
+  ) as "home" | "feed" | "profile";
 
   return (
     <ScreenWrapper activeTab={activeTab}>
       {activeTab === "home" && <HomeTab />}
-      {activeTab === "leaderboard" && <LeaderboardTab />}
       {activeTab === "feed" && <FeedTab />}
       {activeTab === "profile" && <ProfileTab />}
     </ScreenWrapper>

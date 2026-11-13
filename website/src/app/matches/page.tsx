@@ -62,7 +62,7 @@ export default function MatchesPage() {
   });
 
   return (
-    <ScreenWrapper hideNav={false}>
+    <ScreenWrapper activeTab="matches" hideNav={false}>
       <div className="space-y-4 animate-fade-in pb-12">
         {/* Top Header */}
         <div className="flex items-center justify-between pt-1">
