@@ -1,45 +1,25 @@
 const User = require("../models/User");
-const Investment = require("../models/Investment.model");
+const Team = require("../models/Team.model");
+const Match = require("../models/Match.model");
 const redis = require("../config/redis");
-// Get Top 10 Users by Points
+
+// Get Top Users by Activity/Engagement
 exports.getTopUsers = async (req, res) => {
   try {
-   
-    const leaderboard = await Investment.aggregate([
-      // 1. Group by User ID and sum their investments
-      {
-        $group: {
-          _id: "$user",
-          totalInvested: { $sum: "$pointsInvested" },
-          firestInvestmentDate: { $min: "$createdAt" },
-        },
-      },
-      // 2. Sort by highest investment first
-      { $sort: { totalInvested: -1, firestInvestmentDate: 1} },
-      // 3. Limit to top 10
-      { $limit: 10 },
-      // 4. Join with Users collection to get Name
-      {
-        $lookup: {
-          from: "users",
-          localField: "_id",
-          foreignField: "_id",
-          as: "userDetails",
-        },
-      },
-      // 5. Unwind to make userDetails an object instead of array
-      { $unwind: "$userDetails" },
-      // 6. Project final clean structure
-      {
-        $project: {
-          _id: 1,
-          name: "$userDetails.name",
-          // We return 'points' here so your frontend code (item.points) still works
-          // but now it represents "Total Invested"
-          points: "$totalInvested",
-        },
-      },
-    ]);
+    const users = await User.find({})
+      .select("name username profilePicture scholarId points createdAt")
+      .limit(20);
+
+    const leaderboard = users.map((u, index) => ({
+      _id: u._id,
+      name: u.name,
+      username: u.username,
+      profilePicture: u.profilePicture,
+      scholarId: u.scholarId,
+      points: u.points || 0,
+      rank: index + 1,
+    }));
+
     res.status(200).json(leaderboard);
   } catch (error) {
     console.error("User Leaderboard Error:", error);
@@ -47,47 +27,63 @@ exports.getTopUsers = async (req, res) => {
   }
 };
 
-// Get Top 10 Teams by Total Investment
+// Get Top Teams by Tournament Performance / Wins
 exports.getTopTeams = async (req, res) => {
   try {
-   
-    const leaderboard = await Investment.aggregate([
-      // Group by Team ID and sum the pointsInvested
-      {
-        $group: {
-          _id: "$team",
-          totalInvestment: { $sum: "$pointsInvested" },
-          firstInvestment: { $min: "$createdAt" },
-        },
-      },
-      // Sort by highest investment first
-      { $sort: { totalInvestment: -1, firstInvestment: 1 } },
-      // Limit to top 10
+    // Group completed matches by winner
+    const winningStats = await Match.aggregate([
+      { $match: { status: "COMPLETED", winner: { $ne: null } } },
+      { $group: { _id: "$winner", wins: { $sum: 1 } } },
+      { $sort: { wins: -1 } },
       { $limit: 10 },
-      // Join with Teams collection to get Team Name
       {
         $lookup: {
-          from: "teams", 
+          from: "teams",
           localField: "_id",
           foreignField: "_id",
           as: "teamDetails",
         },
       },
-      // Unwind the array created by lookup
       { $unwind: "$teamDetails" },
-      // Select final fields
+      {
+        $lookup: {
+          from: "events",
+          localField: "teamDetails.event",
+          foreignField: "_id",
+          as: "eventDetails",
+        },
+      },
       {
         $project: {
           _id: 1,
-          totalInvestment: 1,
+          wins: 1,
           teamName: "$teamDetails.name",
-          sport: "$teamDetails.sport", // Assuming sport exists on Team model
+          highestRoundReached: "$teamDetails.highestRoundReached",
+          sport: { $arrayElemAt: ["$eventDetails.sport", 0] },
         },
       },
     ]);
-    res.status(200).json(leaderboard);
+
+    if (winningStats && winningStats.length > 0) {
+      return res.status(200).json(winningStats);
+    }
+
+    // Fallback if no matches completed yet: show approved teams
+    const teams = await Team.find({ approved: true })
+      .populate("event", "sport name")
+      .limit(10);
+
+    const fallbackList = teams.map((t) => ({
+      _id: t._id,
+      wins: 0,
+      teamName: t.name,
+      highestRoundReached: t.highestRoundReached || "NONE",
+      sport: t.event?.sport || "SPORTS",
+    }));
+
+    res.status(200).json(fallbackList);
   } catch (error) {
-    console.error(error);
+    console.error("Team Leaderboard Error:", error);
     res.status(500).json({ message: "Error fetching team leaderboard" });
   }
 };

@@ -1,11 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const teamController = require("../controllers/team.controller");
-const { protect } = require("../middleware/authMiddleware.js");
+const { protect, adminOnly } = require("../middleware/authMiddleware.js");
 
 // 1. Create Team
 router.post("/", protect, teamController.createTeam);
+router.post("/direct", protect, adminOnly, teamController.createTeamDirect);
 
+router.get("/all", protect, teamController.getAllTeams);
 router.get("/my", protect, teamController.getMyTeams);
 router.get("/pending", protect, teamController.getPendingTeams);
 router.get("/eligible/:eventId", protect, teamController.getEligibleTeams); // <--- This feeds the dropdown

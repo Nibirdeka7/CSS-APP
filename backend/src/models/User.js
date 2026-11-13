@@ -21,8 +21,8 @@ const UserSchema = new mongoose.Schema({
     lowercase: true,
     trim: true,
     match: [
-      /^[a-z0-9_]+@cse\.nits\.ac\.in$/,
-      "(Bhai/Behen) only CSE students allowed he ",
+      /^[a-z0-9_.-]+@[a-z0-9_.-]+$/i,
+      "(Bhai/Behen) please provide a valid email",
     ],
   },
 

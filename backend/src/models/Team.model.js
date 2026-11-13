@@ -15,8 +15,8 @@ const TeamSchema = new mongoose.Schema({
 
   captainPhone: {
     type: String,
-    required: true,
-    maxlength: 10,
+    required: false,
+    default: "",
   },
   highestRoundReached: {
     type: String,

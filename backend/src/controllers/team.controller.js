@@ -371,3 +371,72 @@ exports.rejectTeam = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+/**
+ * POST /teams/direct
+ * Admin: Directly create a team for matchmaking without players or pending approval
+ */
+exports.createTeamDirect = async (req, res) => {
+  try {
+    const { name, eventId, captainPhone } = req.body;
+
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: "Unauthorized. Please login." });
+    }
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: "Team Name is required" });
+    }
+
+    if (!eventId) {
+      return res.status(400).json({ message: "Event ID is required" });
+    }
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    // Check uniqueness within the event
+    const nameExists = await Team.findOne({ name: name.trim(), event: eventId });
+    if (nameExists) {
+      return res.status(400).json({ message: "Team name already exists in this event" });
+    }
+
+    const newTeam = new Team({
+      name: name.trim(),
+      event: eventId,
+      captainPhone: captainPhone || "",
+      members: [], // 0 players allowed
+      createdBy: req.user._id,
+      approved: true, // Directly approved, no pending approval needed
+      lives: 2,
+    });
+
+    await newTeam.save();
+
+    res.status(201).json({
+      message: "Team directly created and approved for matchmaking",
+      team: newTeam,
+    });
+  } catch (error) {
+    console.error("Direct Team Creation Error:", error);
+    res.status(500).json({ message: error.message || "Internal Server Error" });
+  }
+};
+
+/**
+ * GET /teams/all
+ * Admin: Get all teams across all events
+ */
+exports.getAllTeams = async (req, res) => {
+  try {
+    const teams = await Team.find()
+      .populate("event")
+      .populate("members.user")
+      .sort({ createdAt: -1 });
+    res.status(200).json(teams);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching all teams" });
+  }
+};

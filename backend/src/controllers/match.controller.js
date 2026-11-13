@@ -54,24 +54,11 @@ exports.getMatchById = async (req, res) => {
 exports.getMatchStats = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const stats = await Investment.aggregate([
-      { $match: { match: new mongoose.Types.ObjectId(id) } },
-      {
-        $group: {
-          _id: "$team",
-          totalPoints: { $sum: "$pointsInvested" },
-          investorCount: { $sum: 1 },
-        },
-      },
-    ]);
+    const match = await Match.findById(id).populate("teamA teamB");
     const response = {
       matchId: id,
-      teams: stats.map((s) => ({
-        teamId: s._id,
-        totalInvested: s.totalPoints,
-        totalInvestors: s.investorCount,
-      })),
+      teams: [],
+      match,
     };
     res.status(200).json(response);
   } catch (error) {
@@ -222,14 +209,14 @@ exports.endMatch = async (req, res) => {
 
     // Tournament Logic
     const currentRound = match.round;
-    await Team.findByIdAndUpdate(
+    const winnerTeam = await Team.findByIdAndUpdate(
       winnerId,
       {
         highestRoundReached:
           currentRound === "FINALS" ? "CHAMPION" : currentRound,
         $set: { ranking: currentRound === "FINALS" ? 1 : null },
       },
-      { session },
+      { session, new: true },
     );
 
     const loserId =
@@ -237,81 +224,41 @@ exports.endMatch = async (req, res) => {
         ? match.teamB
         : match.teamA;
     const loserTeam = await Team.findById(loserId).session(session);
-    loserTeam.lives -= 1;
-    if (loserTeam.lives <= 0) {
-      loserTeam.isEliminated = true;
-      if (currentRound === "FINALS") {
-        loserTeam.ranking = 2;
-        loserTeam.highestRoundReached = "FINALS";
+    if (loserTeam) {
+      loserTeam.lives -= 1;
+      if (loserTeam.lives <= 0) {
+        loserTeam.isEliminated = true;
+        if (currentRound === "FINALS") {
+          loserTeam.ranking = 2;
+          loserTeam.highestRoundReached = "FINALS";
+        }
       }
-    }
-    await loserTeam.save({ session });
-
-    // Payout Logic
-    const allInvestments = await Investment.find({ match: id }).session(
-      session,
-    );
-    const winPot = allInvestments
-      .filter((i) => i.team.toString() === winnerId.toString())
-      .reduce((sum, i) => sum + i.pointsInvested, 0);
-    const losePot = allInvestments
-      .filter((i) => i.team.toString() !== winnerId.toString())
-      .reduce((sum, i) => sum + i.pointsInvested, 0);
-
-    const notifications = [];
-
-    for (let inv of allInvestments) {
-      if (inv.team.toString() === winnerId.toString()) {
-        const share = winPot > 0 ? (inv.pointsInvested / winPot) * losePot : 0;
-        const totalPayout = Math.floor(inv.pointsInvested + share);
-
-        inv.status = "WON";
-        inv.pointsWon = totalPayout;
-        await inv.save({ session });
-
-        await User.findByIdAndUpdate(
-          inv.user,
-          { $inc: { points: totalPayout } },
-          { session },
-        );
-
-        await Transaction.create(
-          [
-            {
-              user: inv.user,
-              type: "WIN",
-              points: totalPayout,
-              match: id,
-              note: "Match Winnings",
-            },
-          ],
-          { session },
-        );
-
-        notifications.push({
-          user: inv.user,
-          title: "You Won! 💰",
-          message: `You won ${totalPayout} points!`,
-          type: "SUCCESS",
-        });
-      } else {
-        inv.status = "LOST";
-        inv.pointsWon = 0;
-        await inv.save({ session });
-      }
+      await loserTeam.save({ session });
     }
 
     await session.commitTransaction();
 
-    if (notifications.length > 0) {
-      try {
-        await Notification.insertMany(notifications);
-      } catch (e) {
-        console.error("Notif Error", e);
+    // Create notifications for match end
+    try {
+      const winnerName = winnerTeam ? winnerTeam.name : "Winner Team";
+      const notifUsers = [];
+      if (winnerTeam?.createdBy) notifUsers.push(winnerTeam.createdBy);
+      if (loserTeam?.createdBy) notifUsers.push(loserTeam.createdBy);
+
+      const notifs = notifUsers.map((uid) => ({
+        user: uid,
+        title: "Match Ended 🏆",
+        message: `${winnerName} has won the match!`,
+        type: "SUCCESS",
+      }));
+      if (notifs.length > 0) {
+        await Notification.insertMany(notifs);
       }
+    } catch (e) {
+      console.error("Notif Error", e);
     }
 
-    res.status(200).json({ message: "Match ended and settled", match });
+    res.status(200).json({ message: "Match ended successfully", match });
   } catch (error) {
     await session.abortTransaction();
     console.error("End Match Error:", error);
