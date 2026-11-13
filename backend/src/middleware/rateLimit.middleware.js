@@ -87,6 +87,11 @@ function ipRateLimit(options = {}) {
   const windowMs = options.windowMs || RATE_LIMIT_WINDOW_MS;
 
   return async (req, res, next) => {
+    // Skip rate limiting on OPTIONS preflight requests
+    if (req.method === "OPTIONS") {
+      return next();
+    }
+
     const rawIp = req.headers["x-forwarded-for"] || req.ip || req.connection.remoteAddress;
     // Format IP to prevent spaces or commas if multiple proxies exist
     const ip = typeof rawIp === "string" ? rawIp.split(",")[0].trim() : rawIp;
@@ -156,6 +161,11 @@ function userRateLimit(options = {}) {
  */
 function endpointRateLimit(maxRequests, windowMs) {
   return async (req, res, next) => {
+    // Skip rate limiting on OPTIONS preflight requests
+    if (req.method === "OPTIONS") {
+      return next();
+    }
+
     const rawIp = req.headers["x-forwarded-for"] || req.ip || req.connection.remoteAddress;
     const ip = typeof rawIp === "string" ? rawIp.split(",")[0].trim() : rawIp;
     const endpoint = `${req.method}:${req.path}`;

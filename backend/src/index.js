@@ -20,7 +20,55 @@ const commentRoutes = require("./routes/comment.route.js");
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = [
+  "https://css-olympics.css-nits.in",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "http://localhost:3001",
+  "http://localhost:5173",
+  process.env.CLIENT_URL,
+  process.env.FRONTEND_URL,
+]
+  .filter(Boolean)
+  .map((origin) => origin.trim().replace(/\/+$/, ""));
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow non-browser requests (e.g. mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+
+    const cleanOrigin = origin.trim().replace(/\/+$/, "");
+
+    if (
+      allowedOrigins.includes(cleanOrigin) ||
+      cleanOrigin.endsWith(".css-nits.in") ||
+      cleanOrigin.endsWith(".nits.ac.in") ||
+      /^http:\/\/localhost:\d+$/.test(cleanOrigin) ||
+      /^http:\/\/127\.0\.0\.1:\d+$/.test(cleanOrigin)
+    ) {
+      return callback(null, true);
+    }
+
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+    "Origin",
+    "Access-Control-Request-Method",
+    "Access-Control-Request-Headers",
+  ],
+  exposedHeaders: ["X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"],
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+// In Express 5, regex path is used instead of wildcard string for explicit options handler
+app.options(/.*/, cors(corsOptions));
 
 app.use(express.json());
 
